@@ -1,0 +1,46 @@
+
+<button class="toggle-btn" id="sidebarToggle"><i class="bi bi-list"></i> Menu</button>
+<div id="sidebar" class="sidebar">
+    <h3 class="text-center">Admin Panel</h3>
+    <hr>
+    <ul class="nav flex-column">
+        <li class="nav-item">
+            <a href="#dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#productsMenu">Sản phẩm</a>
+            <div class="collapse" id="productsMenu">
+                <a href="./product_list.html">Danh sách sản phẩm</a>
+                <a href="./batch_list.html">Danh sách lô hàng</a>
+                <a href="#" onclick="navigateToProductDetail()">Thêm sản phẩm mới</a>
+                <a href="#" onclick="navigateToBatchDetail()">Nhập lô hàng mới</a>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#discountMenu">Khuyến mãi</a>
+            <div class="collapse" id="discountMenu">
+                <a href="./promotion_list.html">Danh sách khuyến mãi</a>
+                <a href="#" onclick="navigateToPromotionDetail()">Thêm khuyến mãi mới</a>
+                <a href="./coupon_list.html">Danh sách mã giảm giá</a>
+                <a href="#" onclick="navigateToCouponDetail()">Thêm mã giảm giá mới</a>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#ordersMenu">Đơn hàng</a>
+            <div class="collapse" id="ordersMenu">
+                <a href="./order_list.html">Danh sách đơn hàng</a>
+                <a href="#">Chi tiết đơn hàng</a>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#usersMenu">Tài khoản</a>
+            <div class="collapse" id="usersMenu">
+                <a href="#">Khách hàng</a>
+                <a href="#">Nhân viên</a>
+            </div>
+        </li>
+        <li class="nav-item">
+            <a href="#" onclick="logout()">Đăng xuất</a>
+        </li>
+    </ul>
+</div>

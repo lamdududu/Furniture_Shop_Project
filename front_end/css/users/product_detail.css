@@ -1,0 +1,103 @@
+.variant-buttons .btn { 
+    margin-right: 5px; border: 1px solid #ccc; 
+}
+
+.variant-buttons .btn.active {
+    border: 2px solid var(--primary-color); 
+    background-color: var(--sub-color);
+    color: white;
+}
+
+.table-bordered {
+    border: 1px solid var(--primary-color);
+}
+
+.table thead > tr, th {
+    background-color: var(--nav-color) !important;
+    color: black !important;
+}
+
+
+.related-product-container {
+    padding: 10px;
+}
+
+.slider-product-container {
+    position: relative;
+    width: 325px;
+    height: 300px;
+    overflow: hidden;
+    border-radius: 10px;
+    /* border: 2px solid var(--primary-color); */
+    /* padding: 10px; */
+}
+
+
+.product-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Đảm bảo các phần tử được căn chỉnh đều */
+    align-items: center;
+    text-align: center;
+    min-width: 250px;
+    height: 350px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    background: white;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 5px;
+}
+
+/* Đảm bảo ảnh luôn có cùng kích thước */
+.img-card {
+    width: 180px;
+    height: 180px;
+    flex-shrink: 0; /* Ngăn không cho ảnh bị co lại */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.img-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+/* Giữ tiêu đề trong 3 dòng, nếu dài hơn sẽ bị cắt */
+.product-card h3 {
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    max-height: 4.5em; /* 3 dòng */
+    line-height: 1.5em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
+    margin-top: 10px;
+}
+
+/* Giá gốc */
+.original-price {
+    min-height: 20px; /* Giữ khoảng cách đồng đều */
+    font-size: 14px;
+    text-decoration: line-through;
+    color: #888;
+}
+
+/* Giá hiện tại và discount */
+.price {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    min-height: 30px; /* Cố định chiều cao */
+}
+
+/* .price span {
+    font-size: 0.9rem;
+} */

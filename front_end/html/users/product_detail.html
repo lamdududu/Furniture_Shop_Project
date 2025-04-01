@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trang chủ - Nội thất Luminous</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+    <link rel="stylesheet" type="text/css" href="../../css/index.css">
+    <link rel="stylesheet" type="text/css" href="../../css/users/user_index.css">
+    <link rel="stylesheet" type="text/css" href="../../css/users/product_detail.css">
+</head>
+<body>
+    <header id="header" class="header">
+
+    </header>
+
+    <main class="container main">    
+        <article class="container mt-5">
+            <section class="row">
+                <div class="col-md-5 d-flex justify-content-center">
+                    <div class="slider-product-container" id="slider-product-container">
+                        <div class="slider-img">
+                            <div class="numberText"><span>1/1</span></div>
+                        </div>
+                        <a class="prev-slider" onclick="plusSlides(-1)">&#10094;</a>
+                        <a class="next-slider" onclick="plusSlides(1)">&#10095;</a>
+                        <div class="thumbnails-slider-container" id="thumbnail-container">
+                            <a class="prev-thumb" onclick="moveThumbnails(-1)">&#10094;</a>
+                            <div class="thumbnails thumbnails-wrapper" id="thumbnails"></div>
+                            <a class="next-thumb" onclick="moveThumbnails(1)">&#10095;</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-7">
+                    <h2 class="fw-bold" id="productName"></h2>
+                    <p class="text-muted text-decoration-line-through mb-0 mt-4" id="originalPrice"></p>
+                    <p class="d-flex align-items-center text-danger fw-bold fs-4">
+                        <span id="price"></span>
+                        <span class="badge bg-success discount ms-4" id="discountPercentage"></span>
+                    </p>
+                    <div class="mb-3">
+                        <label class="fw-bold pb-1">Phân loại:</label>
+                        <div class="variant-buttons" id="variantContainer"></div>
+                    </div>
+                    <label for="quantity" class="fw-bold pb-1">Số lượng: <span id="stockInfo" class="variant-stock"></span></label>
+                    <div class="d-flex align-items-center mb-3">
+                        <input type="number" id="quantity" value="1" class="form-control w-25 me-2" min="1" step="1">
+                    </div>
+
+                    <div class="py-3 my-2">
+                        <div id="couponContainer" class="d-flex" style="display: none;">
+                            <h5 class="fw-bold">Khuyến mãi</h5>
+                            <ul class="ul">
+                                <!-- <li>Giảm 10% cho đơn hàng trên 500K</li>
+                                <li>Miễn phí ship với đơn trên 1 triệu</li> -->
+                            </ul>
+                        </div>
+                    </div>
+
+                    <button id="addCartItemBtn" class="btn btn-sub btn-lg me-2"><i class="bi bi-cart-plus-fill"></i> Thêm vào giỏ hàng</button>
+                    <button id="buyNowBtn" class="btn btn-primary btn-lg"><i class="bi bi-bag-check"></i> Mua ngay</button>
+                </div>
+            </section>
+            <div class="mt-4">
+                <h4 class="d-flex flex-colum gap-3 fw-bold">Thông tin chi tiết</h4>
+                <table class="table table-bordered table-responsive">
+                    <tbody id="specificationContainer">
+                        <tr>
+                            <td>Danh mục</td>
+                            <td id="category"></td>
+                        </tr>
+                        <tr>
+                            <td>Chất liệu</td>
+                            <td id="materials"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <h5 class="fw-bold">Mô tả</h5>
+                <div id="description"></div>
+            </div>
+        </article>
+        <article class="mt-5 container">
+            <h4 class="fw-bold">Sản phẩm tương tự</h4>
+            <div class="d-flex overflow-auto related-product-container gap-3" id="relatedProductContainer">
+
+            </div>
+        </article>  
+    </main>
+    <footer id="footer">
+
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="../../js/index.js"></script>
+    <script src="../../js/users/user_index.js"></script>
+    <script src="../../js/external_address_api.js"></script>
+    <script src="../../js/users/product_detail.js"></script>
+    <script src="../../js/login.js" defer></script>
+    <script src="../../js/logout.js" defer></script>
+    <script src="../../js/register.js" defer></script>
+</html>

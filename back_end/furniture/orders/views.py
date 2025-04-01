@@ -1,0 +1,711 @@
+import json
+import os
+import requests
+from datetime import datetime
+from decouple import config
+from django.utils.timezone import make_aware
+from django.core.exceptions import ObjectDoesNotExist
+from django.conf import settings
+from django.shortcuts import get_object_or_404
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models.expressions import Func, Value
+from django.db import transaction
+from django.db.models import Q, OuterRef, JSONField, F, Subquery
+from rest_framework.decorators import APIView
+from rest_framework.response import Response
+from rest_framework import viewsets, status, serializers
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .models import PaymentMethod, Status, Order, OrderItem, OrderStatus, OrderAddress
+from .serializers import PaymentMethodSerializer
+from .serializers import StatusSerializer, CouponSerializer, OrderSerializer, OrderAddressSerializer
+from .permissions import OrderPermissions
+from carts.models import CartItem
+from discounts.models import UserCouponHistory, Coupon, Discount
+from discounts.serializers import UserCouponHistorySerializer
+from products.models import Price, Variant, ItemDimension
+from products.serializers import BatchVariantSerializer
+from users.models import Address
+from furniture.permissions import IsManager, IsAdmin, StandardActionPermission
+from furniture.paginations import CustomPagination
+
+
+
+
+class PaymentMethodViewSet(viewsets.ModelViewSet):
+    queryset = PaymentMethod.objects.all()
+    serializer_class = PaymentMethodSerializer
+    permission_classes = [StandardActionPermission]
+    pagination_class = None
+
+
+def get_delivery_fee(province, district, ward, value_of_order, order_items):
+
+    token = config('GHN_TOKEN')
+    shop_id = int(config('SHOP_ID'))
+    from_district_id = int(config('DISTRICT_ID'))
+    from_ward_code = config('WARD_CODE')
+
+    province_url = 'https://online-gateway.ghn.vn/shiip/public-api/master-data/province'
+    district_url = 'https://online-gateway.ghn.vn/shiip/public-api/master-data/district'
+    ward_url = 'https://online-gateway.ghn.vn/shiip/public-api/master-data/ward?district_id'
+
+    province_id = None
+    district_id = None
+    ward_code = None
+    service_type = 5        # Mặc định đặt cho hàng nhẹ (vì chưa có quản lý trọng lượng trong DB)
+
+    response = get_address_for_delivery_fee(api=province_url, token=token)
+
+    if not response or not response.get('data'):
+        print('Province address not found')
+        return {
+            'error_type': 'address',
+            'error': 'Province address not found'
+        }
+    
+    # lấy province id
+    else:
+        province_list = response.get('data')
+        for prov in province_list:
+        
+            if prov.get('ProvinceName').casefold() == province.casefold():  # casefold() để so sánh không phân biệt hoa thường
+                                                                            # dùng tốt cho unicode hơn lower()
+                province_id = prov.get('ProvinceID')
+                break
+
+            for name in prov.get('NameExtension'):
+                if name.casefold() == province.casefold():
+                    province_id = prov.get('ProvinceID')
+                    break
+
+            if province_id:
+                break
+
+        if not province_id:
+            print('ProvinceID not found')
+            return False
+        
+    response = get_address_for_delivery_fee(api=district_url, token=token, param_name='province_id', id=province_id)     
+
+    if not response or not response.get('data'):
+        print('District address not found')
+        return {
+            'error_type': 'address',
+            'error': 'District address not found'
+        }
+    
+    # lấy district id
+    else:
+        district_list = response.get('data')
+        for dist in district_list:
+            if dist.get('DistrictName').casefold() == district.casefold():
+                district_id = dist.get('DistrictID')
+                break
+
+            for name in dist.get('NameExtension'):  
+                if name.casefold() == district.casefold():
+                    district_id = dist.get('DistrictID')
+                    break
+            
+            if district_id:
+                break
+        
+        if not district_id:
+            print('DistrictID not found')
+            return False
+    
+    # lấy service type
+    response = get_service_type(token=token, shop_id=shop_id, from_district_id=from_district_id, to_district_id=district_id)
+
+    # kiểm tra có dịch vụ giao hàng từ cửa hàng đến địa chỉ được cung cấp hay không
+    if not response or not response.get('data'):
+        print('Service type not found')
+        return {
+            'error_type': 'service',
+            'error': 'Service type not found'
+        }
+
+    response = get_address_for_delivery_fee(api=ward_url, token=token, param_name='district_id', id=district_id)
+
+    if not response or not response.get('data'):
+        print('Ward address not found')
+        return {
+            'error_type': 'address',
+            'error': 'Ward address not found'
+        }
+    
+    # lấy ward code
+    else:
+        ward_list = response.get('data')
+        for ward_api in ward_list:
+            if ward_api.get('WardName').casefold() == ward.casefold():
+                ward_code = ward_api.get('WardCode')
+                break
+
+            for name in ward_api.get('NameExtension'):
+                if name.casefold() == ward.casefold():
+                    ward_code = ward_api.get('WardCode')
+                    break
+
+            if ward_code:
+                break
+        
+        if not ward_code:
+            print('WardCode not found')
+            return False
+    
+    calculate_fee_url = 'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/fee'
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Token': token,
+        'ShopId': str(shop_id)
+    }
+    
+    items = CartItem.objects.filter(
+        id__in=order_items
+    ).annotate(
+        dimension_json=ArrayAgg(
+             Func(
+                Value('name'), F('variant__itemdimension__name'),
+                Value('length'), F('variant__itemdimension__length'),
+                Value('height'), F('variant__itemdimension__height'),
+                Value('width'), F('variant__itemdimension__width'),
+                Value('weight'), F('variant__itemdimension__weights'),
+                Value('quantity'), F('variant__itemdimension__quantity'),
+                function='jsonb_build_object',
+                output_field=JSONField()
+            ),
+            distinct=True
+        )
+    ).values('id', 'dimension_json', 'quantity')
+
+    print('Items: ', items)
+
+    api_items = []
+
+    for item in items:
+        for order_item in order_items:
+            if order_item == item['id']:
+                for dimension in item['dimension_json']:
+                    api_item = {
+                        'name': dimension['name'],
+                        'quantity': item['quantity'] * dimension['quantity'],
+                        'weight': dimension['weight'],
+                        'length': dimension['length'],
+                        'width': dimension['width'],
+                        'height': dimension['height'],
+                    }
+                    api_items.append(api_item)
+
+    print('Item dimensions: ', list(api_items))
+
+    # Nội thất mặc định là hàng nặng nên các trường length, height, width, weight sẽ không cần giá trị
+    # items = [                         # GHN dùng list items để tính toán phí vận chuyển cho serivce_type hàng nặng
+    #   {
+    #     'length': item['length'],     # cm
+    #     'width': item['width'],       # cm
+    #     'height': item['height'],     # cm
+    #     'weight': item['weight'],     # gram
+    #     'quantity': item['quantity'],
+    #     'name': item['name'],
+    #    },
+    #]
+    # giá trị coupon cũng được đặt mặc định là None (đây là mã giảm giá từ bên phía nhà vận chuyển)
+    body = {
+        'service_type_id': service_type,
+        'from_district_id': from_district_id,
+        'from_ward_code': from_ward_code,
+        'to_district_id': district_id,
+        'to_ward_code': ward_code,
+        'insurance_value': int(value_of_order),    # giá trị của đơn hàng (để tính khoản đền bù cho các trường hợp xấu do bên vận chuyển)
+        'coupon': None,         # mã giảm giá
+        "length": 1,    
+        "width": 1,      
+        "height": 1,          
+        "weight": 1,          
+        "items": api_items,
+    }
+
+    print('API data: ', body)
+
+    response = requests.post(calculate_fee_url, json=body, headers=headers)
+
+    print(response.text)
+
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return {
+            'error_type': 'fee',
+            'error': f'Error occurred while fetching delivery fee: {response.status_code}'
+        }
+
+def get_address_for_delivery_fee(api, token, param_name=None, id=None):
+
+    headers = {
+        'Content-Type': 'application/json',
+        'Token': token
+    }
+
+    body = { param_name: id } if param_name is not None else {}
+        
+    try:
+        response = requests.post(api, json=body, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return False
+        
+    except requests.exceptions.RequestException as e:
+        print(f'Error occurred while fetching address: {e}')
+        return False
+    
+def get_service_type(token, shop_id, from_district_id, to_district_id):
+
+    service_type_url = 'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/available-services'
+
+    headers = {
+        'Token': token,
+        'Content-Type': 'application/json'
+    }
+
+    body = {
+        'shop_id': shop_id,
+        'from_district': from_district_id,
+        'to_district': to_district_id
+    }
+
+    try:
+        response = requests.post(service_type_url, json=body, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f'Error occurred while fetching service type: {e}')
+        return False
+
+class DeliveryFeeViewSet(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        address = Address.objects.filter(id=request.data.get('address')).first()
+        
+        if not address:
+            print('Address not found')
+            return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        delivery_fee = get_delivery_fee(
+            address.province, address.district, address.ward,
+            request.data.get('total_amount'), request.data.get('order_items'))
+
+        if delivery_fee:
+            return Response(delivery_fee.get('data'), status=status.HTTP_200_OK)
+        
+        return Response({'error': 'Cannot get delivery fee'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.select_related('user', 'address', 'payment_method').prefetch_related('coupons')
+    serializer_class = OrderSerializer
+    permission_classes = [OrderPermissions]
+    pagination_class = CustomPagination
+    
+    def get_queryset(self):
+
+        if IsAdmin().has_permission(self.request, []):
+            return super().get_queryset()
+        
+        return Order.objects.filter(user=self.request.user)
+    
+
+    def get_object(self):
+
+        if IsManager().has_permission(self.request, self):
+            return get_object_or_404(Order, id=self.kwargs["pk"])
+        return get_object_or_404(Order, id=self.kwargs["pk"], user=self.request.user)
+
+    
+    def create(self, request, *args, **kwargs):
+
+        # lấy thông tin đơn đặt hàng
+        order_data = request.data.get('order').copy()
+        print('Order data:', order_data)
+
+        # lấy danh sách cart items (để xóa khỏi giỏ hàng sau khi đặt hàng thành công)
+        cart_items = request.data.get('cart_items')
+
+        order_items = CartItem.objects.filter(id__in=cart_items).values('variant_id', 'quantity')
+        
+        # lấy instance địa chỉ
+        address_data = Address.objects.get(id=request.data.get('address'))
+
+        # tạo địa chỉ nhận hàng
+        order_address_data = {
+            'name': address_data.name,
+            'phone_number': address_data.phone_number,
+            'email': address_data.email if address_data.email else None,
+            'district': address_data.district,
+            'province': address_data.province,
+            'ward': address_data.ward,
+            'detail_address': address_data.detail_address,
+        }
+
+        # tính tổng giá trị sản phẩm trong đơn đặt hàng
+        total_amount = calculate_amount(order_items=order_items)
+        if not total_amount:
+            return Response({'error': 'Total amount cannot be zero'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # lấy phí vận chuyển
+        delivery_fee = get_delivery_fee(address_data.province, address_data.district, address_data.ward, total_amount, cart_items)
+        if delivery_fee.get('error') is not None:
+            return Response(delivery_fee.get('error'), status=status.HTTP_400_BAD_REQUEST)
+        
+        print('Delivery fee:', delivery_fee)
+
+        # tính thành tiền cuối cùng
+        total_amount = calculate_final_amount(
+            total_amount=total_amount,
+            delivery_fee=float(delivery_fee.get('data').get('total')),
+            coupons=order_data.get('coupon_ids'),
+            user=request.user.id
+        )
+
+        # thêm các trường còn thiếu vào order_data
+        order_data['total_amount'] = total_amount
+        order_data['delivery_fee'] = delivery_fee.get('data').get('total')
+        order_data['user_id'] = request.user.id
+        order_data['order_date'] = datetime.now()
+        order_data['order_items'] = list(order_items)
+
+        if order_data['payment_method_id'] == 1:
+            order_data['is_paid'] = False
+        else:
+            order_data['is_paid'] = True
+
+
+        now = datetime.now()
+        # Đặt trạng thái ban đầu cho đơn hàng
+        order_data['order_status'] = [
+            {
+                'status_id': 1,
+                'updated_at': now
+            }
+        ]
+
+        print('order_address_data: ', order_address_data)
+
+        if not address_data:
+            return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        try:
+            with transaction.atomic():
+
+                # tạo địa chỉ giao hàng
+                address_serializer = OrderAddressSerializer(data=order_address_data)            
+                if not address_serializer.is_valid():
+                    print('Address serializer not valid', address_serializer.errors)
+                    raise serializers.ValidationError({'error': 'Address not valid'})
+                
+                try:
+                    address = address_serializer.save()
+                except Exception as e:
+                    print('Error occurred while saving address: ', e)
+                    raise serializers.ValidationError({'error': 'Error occurred while saving address'})
+
+                # tạo đơn hàng
+                order_data['address_id'] = address.id
+
+                print('Order data last:', order_data)
+
+                order_serializer = OrderSerializer(data=order_data)
+                if not order_serializer.is_valid():
+                    print('Order serializer not valid', order_serializer.errors)
+                    raise serializers.ValidationError({'error': 'Order not valid'})
+                
+                try:
+                    order = order_serializer.save()
+                except Exception as e:
+                    print('Error occurred while saving order: ', e)
+                    raise serializers.ValidationError({'error': 'Error occurred while saving order'})
+
+
+                try:
+                    coupons = order_data.get('coupon_ids', []).copy()
+                    
+                    if coupons:
+                  
+                        used_coupons = [{'user': request.user.id, 'coupon': coupon} for coupon in coupons]
+
+                        coupon_history_serializer = UserCouponHistorySerializer(data=used_coupons, many=True)
+                        
+                        if not coupon_history_serializer.is_valid():
+                            print('Coupon history serializer not valid', coupon_history_serializer.errors)
+                            raise serializers.ValidationError({'error': 'Coupon history serializer not valid'})
+
+                        coupon_history_serializer.save()
+
+                except Exception as e:
+                    print('Error occurred while saving coupon history: ', e)
+                    raise serializers.ValidationError({'error': 'Error occurred while saving coupon history'})
+
+
+                try:
+                    order_items = order_data.get('order_items', []).copy()
+
+                    if not order_items:
+                        print('No order items')
+                        raise serializers.ValidationError({'error': 'No order items'})
+
+                    # variant_ids = [item['variant_id'] for item in order_items]
+                    # variants = Variant.objects.filter(id__in=variant_ids) 
+
+                    # stock_serializers = BatchVariantSerializer()
+
+                    for item in order_items:
+                        # variant = variants.get(id=item['variant_id'])
+                        batch_variant_stock = BatchVariantSerializer.get_oldest_batch(item['variant_id'])
+                        
+                        # nếu không có batch được tìm thấy, lỗi
+                        if not batch_variant_stock:
+                            print('Stock not available for variant')
+                            raise serializers.ValidationError({'error': 'No stock available for variant'})
+
+                        # Cập nhật lại số lượng tồn kho
+                        while batch_variant_stock and item['quantity'] > 0:
+
+                            # nếu số lượng tồn trong batch hiện tại nhỏ hơn quantity thì đặt = 0
+                            if batch_variant_stock.stock < item['quantity']:
+                                item['quantity'] -= batch_variant_stock.stock
+                                batch_variant_stock.stock = 0
+                            
+                            # nếu số lượng tồn trong batch hiện tại lớn quantity thì stock -= quantity
+                            else:
+                                batch_variant_stock.stock -= item['quantity']
+                                item['quantity'] = 0
+
+                            batch_variant_stock.save()
+
+                            # nếu quantity chưa xử lý hết thì tiếp tục gọi batch có exp gần nhất và lặp lại vòng lặp
+                            if item['quantity'] > 0:
+                                batch_variant_stock = BatchVariantSerializer.get_oldest_batch(item['variant_id'])
+                        
+                                if not batch_variant_stock:
+                                    print('Stock not available for variant')
+                                    raise serializers.ValidationError({'error': 'No stock available for variant'})
+                    
+                except Exception as e:
+                    print('Error occurred while updating variant stock: ', e)
+                    raise serializers.ValidationError({'error': 'Error occurred while updating variant stock'})
+
+
+                # xóa các sản phẩm đã đặt ra khỏi giỏ hàng
+                try:
+                    if cart_items:
+
+                        deleted_count, _ = CartItem.objects.filter(id__in=cart_items).delete()
+                        print('Deleted', deleted_count, 'cart items')
+
+                except Exception as e:
+                    print('Error occurred while deleting order items: ', e)
+                    raise serializers.ValidationError({'error': 'Error occurred while deleting order items'})
+
+            return Response({
+                'order': order.id
+            }, status=status.HTTP_201_CREATED) 
+
+        except Exception as e:
+            print('Error occurred while getting order: ', e)
+            return Response({'error': 'Error occurred while getting order'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+# Tính thành tiền cho order
+def calculate_amount(order_items):
+    total_amount = 0
+    
+    today = make_aware(datetime.now())
+
+    # Tính tổng tiền ban đầu (tổng giá trị các sản phẩm)
+    if not order_items:
+        print("No order items")
+        return False
+
+    for item in order_items:
+
+        # lấy sản phẩm để kiểm tra giảm giá
+        product_id = Variant.objects.filter(
+            id=item.get('variant_id')
+            ).values_list('product_id', flat=True).first()          # lấy 1 giá trị product_id duy nhất
+
+        discount = Discount.objects.filter(
+            product_id=product_id,
+            promotion__start_date__lte=today,
+            promotion__end_date__gte=today
+        ).order_by('-percentage').first()
+
+        price = 0
+        price_data = Price.objects.filter(
+            variant_id = item.get('variant_id'),
+            start_date__lte = today,
+        ).filter(
+            Q(end_date__gt = today) | Q(end_date__isnull = True)
+        ).first()
+
+        if not price_data:
+            print("No price found for variant", item.get('variant_id'))
+            return False
+        
+        if discount:
+            price = price_data.price - price_data.price * discount.percentage
+        else:
+            price = price_data.price
+
+        total_amount += price * item.get('quantity')
+
+    print('Total amount (order_items): ', total_amount)
+
+    return float(total_amount)
+    
+
+def calculate_final_amount(total_amount, delivery_fee, coupons, user):
+    final_amount = total_amount
+    today = make_aware(datetime.now())
+
+    # Tính giá trị giảm giá và tổng tiền sau giảm giá
+    if not coupons:
+        final_amount = total_amount
+    else:
+        discount_amount = 0
+        index = 0
+
+        for coupon in coupons:
+            try:
+                cp = Coupon.objects.get(id=coupon)
+            except ObjectDoesNotExist:
+                print("Coupon not found", coupon)
+                return False
+            
+            if check_used_coupon_history(coupon, user):
+                print("Coupon has been used", coupon)
+                return False
+
+            if cp.start_date <= today and (not cp.end_date or cp.end_date >= today) and (cp.min_amount is None or cp.min_amount <= total_amount):
+                discount = total_amount * float(cp.percentage)
+
+                if cp.max_discount is not None and discount > cp.max_discount:
+                    discount_amount += float(cp.max_discount)
+                else:
+                    discount_amount += float(discount)
+
+                index += 1
+            
+            if not cp.is_stackable and index > 1:
+                return False
+    
+        final_amount -= discount_amount
+
+    print('Final amount (coupon): ', final_amount)
+
+    # Tính tổng tiền đã bao gồm phí giao hàng
+    final_amount += delivery_fee
+
+    print('Final amount (fee): ', final_amount)
+
+    return final_amount
+
+
+# Kiểm tra user đã sử dụng coupon hay chưa
+def check_used_coupon_history(coupon, user):
+
+    coupon_history = UserCouponHistory.objects.filter(
+        coupon_id = coupon,
+        user_id = user,
+    ).first()
+
+    if coupon_history:
+        return True
+    
+    return False
+
+
+class StatusViewSet(viewsets.ModelViewSet):
+
+    queryset = Status.objects.all()
+    serializer_class = StatusSerializer
+    pagination_class = None
+    permission_classes = [StandardActionPermission]
+
+
+class OrderStatusUpdatingViewSet(APIView):
+    
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+
+        try:
+            order = Order.objects.get(pk=request.data.get('order'))
+            new_status = Status.objects.get(pk=request.data.get('status'))
+
+            if not order or not new_status:
+                print('Missing order_id or status_id')
+                return Response({'error': 'Missing order_id or status_id'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            order_status = OrderStatus.objects.create(order=order, status=new_status, updated_at=datetime.now())
+            
+            return Response({
+                'updated_at': order_status.updated_at
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print('Error occurred while getting updating: ', e)
+            return Response({'error': 'Error occurred while getting order_id or status_id'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class OrderSearchingViewSet(APIView):
+    
+    permission_classes = [IsAuthenticated]
+    pagination_class = CustomPagination
+
+    def get(self, request):
+
+        paginator = self.pagination_class()
+        order_info = request.GET.get('query')
+
+        if not order_info:
+            print('Missing order info')
+            return Response({'error': 'Missing order info'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if request.user.groups.name not in IsAdmin.allowed_groups:
+            
+            orders = Order.objects.filter(
+                user=self.request.user,
+            ).filter(
+                Q(status__name=order_info) |
+                Q(payment_method__name=order_info)
+            ).distinct()
+
+            serializers = OrderSerializer(data=orders, many=True)
+
+            paginated_orders = paginator.paginate_queryset(serializers)
+
+            return paginator.get_paginated_response(paginated_orders)
+        
+        else:
+
+            orders = Order.objects.filter(
+                Q(status__name=order_info) |
+                Q(payment_method__name=order_info)
+            ).distinct()
+
+            serializers = OrderSerializer(data=orders, many=True)
+
+            paginated_orders = paginator.paginate_queryset(serializers)
+
+            return paginator.get_paginated_response(paginated_orders)
+    
+
+

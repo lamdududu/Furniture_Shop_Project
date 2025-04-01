@@ -1,0 +1,125 @@
+
+
+.sidebar {
+    width: 250px;
+    background-color: var(--primary-color);
+    color: white;
+    height: 100vh;
+    position: fixed;
+    padding: 15px;
+    transition: transform 0.3s ease-in-out;
+    z-index: 1000;
+}
+
+.sidebar a {
+    color: white;
+    text-decoration: none;
+    display: block;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.sidebar a:hover {
+    background-color: var(--sub-color);
+}
+
+.sidebar .nav-item .collapse {
+    padding-left: 20px;
+}
+
+.sidebar.hidden {
+    transform: translateX(-100%);
+}
+
+.breadcrumb {
+    padding: 1rem;
+}
+
+.breadcrumb a {
+    text-decoration: none;
+    color: var(--primary-color);
+}
+
+.collapse {
+    font-size: 0.9rem;
+}
+
+.content {
+    margin-left: 260px;
+    padding: 20px;
+    transition: margin-left 0.3s ease-in-out;
+}
+
+.content.expanded {
+    margin-left: 0;
+}
+
+.pagination {
+    display: flex;
+    list-style: none;
+    gap: 8px;
+    padding: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.toggle-btn {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        transform: translateX(-100%);
+    }
+    .content {
+        margin-left: 0;
+    }
+    .toggle-btn {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        background-color: #5a4436;
+        color: white;
+        border: none;
+        padding: 15px;
+        text-align: left;
+        font-size: 1.2rem;
+        cursor: pointer;
+        z-index: 1100;
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
+    .content {
+        padding-top: 60px; /* Đẩy nội dung xuống dưới toggle */
+    }
+    .sidebar {
+        padding-top: 65px;
+    }
+    .variant-sidebar {
+        width: 100%;
+    }
+}
+
+.pagination li {
+    padding: 8px 12px;
+    background-color: var(--fifth-color);
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none;
+}
+.pagination .active {
+    background-color: var(--primary-color);
+    color: white;
+}
+.pagination .disabled {
+    background-color: var(--fourth-color);
+    color: gray;
+    pointer-events: none;
+}
+
+td {
+    font-size: 0.95rem;
+}

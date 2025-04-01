@@ -1,0 +1,68 @@
+table th:nth-child(1), table td:nth-child(1) {
+    width: 10%; /* Giảm kích thước cột ID */
+}
+table th:nth-child(2), table td:nth-child(2) {
+    width: 45%; /* Cột tên sản phẩm lớn hơn */
+}
+table th:nth-child(3), table td:nth-child(3) {
+    width: 15%; /* Cột phân loại */
+}
+table th:nth-child(4), table td:nth-child(4) {
+    width: 15%; /* Cột thương hiệu */
+}
+table th:nth-child(5), table td:nth-child(5) {
+    width: 15%; 
+}
+
+
+td:nth-child(2) { 
+    max-width: 100px; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td:nth-child(2):hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+td:nth-child(3) { 
+    max-width: 40px; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td:nth-child(3):hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+td:nth-child(4) { 
+    max-width: 40px; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td:nth-child(4):hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+}
+
+td:nth-child(5) { 
+    max-width: 40px; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+td:nth-child(5):hover {
+    overflow: visible;
+    white-space: normal;
+    word-wrap: break-word;
+}

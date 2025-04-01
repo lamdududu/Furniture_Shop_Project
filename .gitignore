@@ -1,0 +1,19 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Environment variables files
+.env
+
+# Folder
+
+diagrams/
+media/
+
+
+# Folder of Python virtual environment
+Lib/
+Inclucde/
+Scripts/
+
+pyvenv.cfg

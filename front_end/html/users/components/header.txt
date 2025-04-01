@@ -1,0 +1,15 @@
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand" href="#">LUMINOUS</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul id="navbar" class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="./index.html">Trang chủ</a></li>
+                <li class="nav-item"><a class="nav-link" href="./products.html">Sản phẩm</a></li>
+                <li class="nav-item pe-lg-5"><a class="nav-link" href="./not_found.html">Về chúng tôi</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>

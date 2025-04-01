@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MiaoMiao</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="../../css/index.css">
+    <link rel="stylesheet" type="text/css" href="../../css/admins/admin_index.css">
+    <!-- <link rel="stylesheet" type="text/css" href="../../css/admins/product_detail.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="../../css/login.css"> -->
+</head> 
+<body>
+
+    <nav id="sidebarNav">
+        
+    </nav>
+    <main class="content">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb" id="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#"><i class="bi bi-house"></i> Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="#">Đơn hàng</a></li>
+                    <li class="breadcrumb-item"><a href="./order_list.html">Danh sách đơn hàng</a></li>
+                    <li class="breadcrumb-item active">Chi tiết đơn hàng</li>
+                </ol>
+            </nav>
+        </div>
+        <article class="main-content">
+            <div class="container-fluid">
+                <div class="card">
+                    <div class="card-header">Chi tiết đơn hàng</div>
+                    <div class="card-body">
+                        <div id="couponForm" class="row g-3 needs-validation" novalidate>
+                            <div class="d-flex justify-content-end">
+                                <button id="updateStatusBtn" type="submit" class="btn btn-primary px-3 py-2" data-action="">Cập nhật trạng thái</button>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                                <div class="flex-grow-1">
+                                    <label for="username">Tài khoản đặt hàng:</label>
+                                    <input class="form-control custom-input" type="text" id="username" name="username" disabled>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="reciverName">Tên người nhận:</label>
+                                    <input id="reciverName" class="form-control custom-input" type="text" name="reciverName" disabled>    
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                                <div class="flex-grow-1">
+                                    <label for="phoneNumber">Số điện thoại:</label>
+                                    <input class="form-control custom-input" type="text" id="phoneNumber" name="phoneNumber" disabled>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="email">Địa chỉ email:</label>
+                                    <input id="email" class="form-control custom-input" type="text" name="email" disabled>    
+                                </div>
+                            </div>
+                            <div>
+                                <label for="address">Địa chỉ giao hàng:</label>
+                                <input class="form-control custom-input" type="text" id="address" name="address" disabled>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                                <div class="flex-grow-1">
+                                    <label for="orderDate">Ngày đặt hàng:</label>
+                                    <input class="form-control custom-input" type="text" id="orderDate" name="orderDate" disabled>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="totalAmount">Thành tiền:</label>
+                                    <input id="totalAmount" class="form-control custom-input" type="text" name="totalAmount" disabled>    
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="deliveryFee">Phí vận chuyển:</label>
+                                    <input id="deliveryFee" class="form-control custom-input" type="text" name="deliveryFee" disabled>    
+                                </div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                                <div class="flex-grow-1">
+                                    <label for="paymentMethod">Phương thức thanh toán:</label>
+                                    <input class="form-control custom-input" type="text" id="paymentMethod" name="paymentMethod" disabled>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <label for="paymentStatus">Trạng thái thanh toán:</label>
+                                    <input id="paymentStatus" class="form-control custom-input" type="text" name="paymentStatus" disabled>    
+                                </div>
+                            </div>
+                            <div>
+                                <label>Mã giảm giá:</label>
+                                <table class="table table-bordered table-responsive">
+                                    <tbody id="coupons">
+
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <div>
+                                <h5>Danh sách sản phẩm</h5>
+                                <table class="table table-bordered table-responsive table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center align-middle">STT</th>
+                                            <th class="text-center align-middle">Tên sản phẩm</th>
+                                            <th class="text-center align-middle">Phân loại</th>
+                                            <th class="text-center align-middle">Giá bán</th>
+                                            <th class="text-center align-middle">Tổng giá</th>
+                                            <th class="text-center align-middle">Số lượng</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderItems"></tbody>
+                                </table>
+                            </div>
+
+                            <div>
+                                <h5>Trạng thái đơn hàng</h5>
+                                <table class="table table-bordered table-responsive table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center align-middle">STT</th>
+                                            <th class="text-center align-middle">Trạng thái</th>
+                                            <th class="text-center align-middle">Ngày cập nhật</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderStatus"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </article>
+    </main>
+
+    <section class="modal fade" id="statusModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="statusModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="updateStatusForm" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="statusModalLabel">Cập nhật trạng thái</h5>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        Trạng thái đơn hàng hiện tại là: <b id="nowStatusOrder"></b>
+                    </div>
+                    <div>
+                        <select id="statusSelector" class="form-select">
+                            <option value="">Chọn trạng thái</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer d-flex justify-content-center align-items-center">
+                    <button type="sumbit" class="btn btn-primary">Cập nhật</button>
+                    <button type="button" class="btn btn-sub" data-bs-dismiss="modal">Hủy bỏ</button>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <section class="modal fade" id="warning-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">Cảnh báo</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="warning-message">
+                        Nếu tiếp tục, các chỉnh sửa sẽ không được lưu. Bạn có muốn ở lại trang không?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="keep-page-btn" class="btn btn-content" data-bs-dismiss="modal">Ở lại</button>
+                    <button type="button" id="confirm-exit-btn" class="btn btn-danger">Rời đi</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="../../js/index.js"></script>
+    <script src="../../js/admins/admin_index.js"></script>
+    <script src="../../js/admins/orders/order_detail.js"></script>
+    <script src="../../js/logout.js"></script>
+
+</body>
+</html>
