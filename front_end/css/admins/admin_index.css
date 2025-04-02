@@ -123,3 +123,33 @@
 td {
     font-size: 0.95rem;
 }
+
+canvas {
+    min-width: 400px;
+    margin: auto;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Tạo 2 cột */
+    grid-template-rows: repeat(2, 1fr);    /* Tạo 2 hàng */
+    gap: 20px; /* Khoảng cách giữa các ô */
+    padding: 20px;
+}
+
+.chart-item {
+    background: #f1f1f1;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%; /* Chiều cao đầy đủ của các ô trong grid */
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+}
+
+.chart-item h3 {
+    font-size: 18px;
+    text-align: center;
+}

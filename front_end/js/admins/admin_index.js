@@ -27,8 +27,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     // Tải vào DOM sidebar
     const sidebar = await loadHTMLContent("./components/sidebar.txt")
     document.getElementById('sidebarNav').innerHTML = sidebar
+
+
+    // Điều hướng đến trang danh sách tài khoản
+    // Trang tài khoản khách hàng
+    document.getElementById('customerAccounts').addEventListener('click', () => {
+        sessionStorage.setItem('accountType', 'customer'),
+        window.location.href = 'account_list.html'
+
+    })
+
+    // Trang tài khoản nhân viên
+    document.getElementById('staffAccounts').addEventListener('click', () => {
+        sessionStorage.setItem('accountType', 'staff'),
+        window.location.href = 'account_list.html'
+
+    })
  
 })
+
 
 
 // ----------------------------------------------------------------
@@ -67,6 +84,15 @@ function navigateToOrderDetail(order_id=null) {
     sessionStorage.setItem('order_id', order_id? order_id : 'new_order')
     window.location.href = `order_detail.html?id=${order_id? order_id : 'new_order'}`
 }
+
+
+// Điều hướng đến trang thông tin tài khoản
+function navigateToAccountDetail(account_id, account_username) {
+    sessionStorage.setItem('account_id', account_id ? account_id : 'new_staff_account')
+    window.location.href = `account_detail.html?username=${account_username ? account_username : 'new_staff_account'}`
+}
+
+
 
 
 // ----------------------------------------------------------------
@@ -441,7 +467,49 @@ function deleteParentOfBtn(button) {
 
 
 //----------------------------------------------------------------
-//----------------------------------------------------------------
+// Khoá/mở khóa tài khoản
 //----------------------------------------------------------------
 
 
+async function toggleAccountStatus(row=null, accountId, is_active) {
+
+    try {
+        const access_token = await getValidAccessToken()
+        const response = await fetch(`http://127.0.0.1:8000/api/users/update_staff_account/${accountId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${access_token}`
+            },
+            body: JSON.stringify({ 
+                user: {
+                    is_active: !is_active 
+                }
+            })
+        })
+
+        if (!response.ok) {
+            alert('Đã xảy ra lỗi trong quá trình khóa/mở khóa tài khoản.')
+            return
+        }
+
+        alert(!is_active ? 'Đã mở khóa tài khoản!' : 'Đã khóa tài khoản!')
+        
+        if (row) {
+            const btn = row.querySelector('.btn')
+
+            btn.innerHTML = `
+                <i class="bi bi-${!is_active ? 'unlock-fill' : 'lock-fill'}"></i>
+            `
+            btn.setAttribute('data-bs-title', !is_active ? 'Khoá tài khoản' : 'Mở khóa tài khoản')
+
+            row.cells[4].innerHTML = !is_active ? 'Đang hoạt động' : 'Đã khóa'
+        }
+
+        // initTooltips()
+    }
+
+    catch (err) {
+        console.log(err)
+    }
+}

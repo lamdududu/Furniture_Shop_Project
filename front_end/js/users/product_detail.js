@@ -118,7 +118,7 @@ function selectVariant(button, variant, discount_percentage) {
     if (discount_percentage) {
         document.getElementById('originalPrice').innerText = formatPrice(parseFloat(variant.price))
         document.getElementById('price').innerText = formatPrice(parseFloat(variant.price) - parseFloat(variant.price) * discount_percentage)
-        document.getElementById('discountPercentage').innerText = '-' + (discount_percentage*100) + '%'
+        document.getElementById('discountPercentage').innerText = '-' + Math.floor((discount_percentage*100)) + '%'
     }
     else {
         document.getElementById('price').innerText = formatPrice(parseFloat(variant.price))

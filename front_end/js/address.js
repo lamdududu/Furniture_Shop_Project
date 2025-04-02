@@ -162,3 +162,37 @@ async function fetchUserAddresses() {
     const address = await response.json()
     return address
 }
+
+
+function showAddress(province, district, ward) {
+    
+    const selectedOption = $(`#province option`).filter( function() {
+        return $(this).text() === province
+    })
+
+    if (selectedOption.length > 0) {
+        $(`#province`).val(selectedOption.val()).trigger('change')
+
+        setTimeout( () => {
+            const selectedDistrictOption = $(`#district option`).filter( function() {
+                return $(this).text() === district
+            })
+    
+            if (selectedDistrictOption.length > 0) {
+                $(`#district`).val(selectedDistrictOption.val())
+                $(`#district`).trigger('change')
+    
+                setTimeout( () => {
+                    const selectedWardOption = $(`#ward option`).filter( function() {
+                        return $(this).text() === ward
+                    })
+        
+                    if (selectedWardOption.length > 0) {
+                        $(`#ward`).val(selectedWardOption.val())
+                        $(`#ward`).trigger('change')
+                    }
+                }, 100)
+            }
+        }, 100)
+    }
+}

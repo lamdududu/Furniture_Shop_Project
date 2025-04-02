@@ -136,6 +136,7 @@ function getOrderItems() {
         const itemParent = item.closest('tr')
 
         const row = document.createElement('tr')
+
         row.innerHTML = `
             <td>
                 <div class="d-flex align-items-center flex-nowrap gap-3 product-td">
@@ -150,7 +151,7 @@ function getOrderItems() {
             </td>
             <td class="text-center align-middle">x${itemParent.querySelector('.item-quantity').value}</td>
             <td class="text-center align-middle">
-                ${formatPrice(parseFloat(itemParent.querySelector('.price').getAttribute('data-price')) * parseInt(itemParent.querySelector('.item-quantity').value))}
+                <span>${formatPrice(parseFloat(itemParent.querySelector('.price').getAttribute('data-price')) * parseInt(itemParent.querySelector('.item-quantity').value))}</span>            
             </td>
         `
 

@@ -1,5 +1,7 @@
 from datetime import datetime
+from django.utils.timezone import now, make_aware
 from django.core.exceptions import ValidationError
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from rest_framework import serializers
@@ -87,10 +89,20 @@ class OrderItemSerializer(serializers.ModelSerializer):
     variant = VariantSerializer(read_only=True)
 
     price = serializers.SerializerMethodField(read_only=True)
+
+    image = serializers.SerializerMethodField(read_only=True)
     
     class Meta:
         model = OrderItem
-        fields = ['id', 'variant', 'variant_id', 'quantity', 'price']
+        fields = ['id', 'variant', 'variant_id', 'quantity', 'price', 'image']
+
+    def get_image(self, obj):
+        if obj.variant.product.image_set.exists():
+            return obj.variant.product.image_set.first().image_file.url
+        
+        else:
+            return None
+            
 
     def validate_quantity(self, value):
         if not value:
@@ -206,7 +218,7 @@ class OrderSerializer(serializers.ModelSerializer):
                 OrderItem.objects.bulk_create(order_items)
 
                 # Đặt trạng thái ban đầu cho đơn hàng
-                order_status = OrderStatus.objects.create(order=order, status_id=1, updated_at=datetime.now())
+                order_status = OrderStatus.objects.create(order=order, status_id=1, updated_at=make_aware(datetime.now()))
 
             return order
         

@@ -1,5 +1,6 @@
 from django.db import models
 from datetime import datetime
+from django.utils.timezone import now
 from django.core.validators import RegexValidator
 
 class PaymentMethod(models.Model):
@@ -33,7 +34,7 @@ class OrderAddress(models.Model):
 class Order(models.Model):
     user = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True)
     address = models.ForeignKey(OrderAddress, on_delete=models.SET_NULL, null=True)
-    order_date = models.DateTimeField(null=False, blank=True, default=datetime.now())
+    order_date = models.DateTimeField(null=False, blank=True, default=now)
     delivery_fee = models.DecimalField(max_digits=10, decimal_places=2, null=False, blank=False)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2, null=False, blank=False)
     is_paid = models.BooleanField(default=False, null=False, blank=False)
@@ -57,4 +58,4 @@ class OrderStatus(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=False, related_name='order_status')
     
     status = models.ForeignKey(Status, on_delete=models.SET_NULL, null=True, blank=True)
-    updated_at = models.DateTimeField(null=False, blank=True, default=datetime.now())       
+    updated_at = models.DateTimeField(null=False, blank=True, default=now)       

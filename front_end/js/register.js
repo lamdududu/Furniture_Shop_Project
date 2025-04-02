@@ -108,29 +108,6 @@ function validateRegisterForm() {
 
 }
 
-async function checkUserData(user_data, data_type) {
-    try {
-        const response = await fetch('http://127.0.0.1:8000/api/users/check_user_data/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                // key động
-                [data_type]: user_data,
-            })
-        })
-        
-        const data = await response.json();
-        console.log(data)
-        return data.exists
-    }
-
-    catch (error) {
-        console.error('Error:', error);
-    }
-}
-
 async function checkUsernameInput(username_input) {
     // const username_input = document.getElementById('usernameSignup')
     const regex = /^[A-Za-z0-9_]+$/
@@ -259,7 +236,7 @@ function checkPasswordInput(password) {
 // const password = document.getElementById('passwordSignup');
     const regex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*])[^\s]{8,}$/
 
-    if(!password.value) {
+    if(!password.value || password.value.trim() === '') {
         if(password.classList.contains('is-valid')) {
             password.classList.remove('is-valid')
         }
@@ -273,7 +250,7 @@ function checkPasswordInput(password) {
                 password.classList.remove('is-valid')
             }
             password.classList.add('is-invalid')
-            password.nextElementSibling.textContent = "Mật khẩu phải chứa ít nhất 8 kí tự, bao gồm chữ hoa, chữ thườngng, số, và ký tự đặc biệt (!@#$%^&*)"
+            password.nextElementSibling.textContent = "Mật khẩu phải chứa ít nhất 8 kí tự, bao gồm chữ hoa, chữ thường, số, và ký tự đặc biệt (!@#$%^&*)"
         }
         
         else {

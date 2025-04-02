@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>MiaoMiao</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="../../css/index.css">
+    <link rel="stylesheet" type="text/css" href="../../css/admins/admin_index.css">
+    <!-- <link rel="stylesheet" type="text/css" href="../../css/admins/product_detail.css"> -->
+    <!-- <link rel="stylesheet" type="text/css" href="../../css/login.css"> -->
+</head> 
+<body>
+
+    <nav id="sidebarNav">
+        
+    </nav>
+    <main class="content">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb" id="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#"><i class="bi bi-house"></i> Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="#">Tài khoản</a></li>
+                    <li class="breadcrumb-item"><a href="./account_list.html">Danh sách tài khoản</a></li>
+                    <li class="breadcrumb-item active">Thông tin tài khoản</li>
+                </ol>
+            </nav>
+        </div>
+        <article class="container-fluid">
+            <div class="card">
+                <div class="card-header">Thông tin tài khoản</div>
+                <form id="changePersonalInfoForm" class="card-body needs-validation d-flex flex-column gap-3 mb-3 pb-3" novalidate>
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-primary" data-action="">Lưu thông tin</button>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                        <div class="flex-grow-1">
+                            <label for="username">Tên đăng nhập:</label>
+                            <input type="text" id="username" name="username" placeholder="user123..." class="form-control custom-input" disabled>
+                            <div class="invalid-feedback">
+                                Vui lòng nhập tên đăng nhập
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" placeholder="example123@example.com" class="form-control custom-input" required>
+                            <div class="invalid-feedback">
+                                Vui lòng nhập email
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <label for="phoneNumber">Số điện thoại :</label>
+                            <input type="text" id="phoneNumber" name="phoneNumber" placeholder="0123456789" class="form-control custom-input" required>
+                            <div class="invalid-feedback">
+                                Vui lòng nhập số điện thoại
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 gap-lg-5">
+                        <div class="flex-grow-1">
+                            <label for="lastname">Họ :</label>
+                            <input type="text" id="lastname" name="lastname" placeholder="Nguyen..." class="form-control custom-input" required>
+                            <div class="invalid-feedback">
+                                Vui lòng nhập họ
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <!-- flex-md-grow-0 -->
+                            <div>
+                                <label for="firstname">Tên:</label>
+                                <input type="text" id="firstname" name="firstname" placeholder="An..." class="form-control custom-input" required>
+                                <div class="invalid-feedback">
+                                    Vui lòng nhập tên
+                                </div>
+                            </div>
+                        </div>
+                    </div>                     
+                    <div class="d-flex flex-wrap gap-2 gap-lg-5">               
+                        <div class="flex-grow-1">
+                            <div for="province">Tỉnh/Thành:</div>
+                            <select id="province" name="province" class="form-select" required>
+                                <option value="-99999" selected disabled>Chọn tỉnh/thành phố TW</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Vui lòng chọn tỉnh/thành phố
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div for="district">Huyện/Quận/Thành:</div>
+                            <select id="district" name="district" class="form-select" required>
+                                <option value="-99999" selected disabled>Chọn huyện/quận/thành</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Vui lòng chọn huyện/quận/thành phố
+                            </div>
+                        </div>                           
+                        <div class="flex-grow-1">
+                            <div for="ward">Xã/Phường/Thị trấn:</div>
+                            <select id="ward" name="ward" class="form-select" required>
+                                <option value="-99999" selected disabled>Chọn xã/phường/thị trấn</option>
+                            </select>
+                            <div class="invalid-feedback">
+                                Vui lòng chọn xã/phường/thị trấn
+                            </div>
+                        </div>
+                    
+                    </div>           
+                    <div>
+                        <label for="detailAddress">Số nhà/Văn phòng/Tòa nhà/Tầng :</label>
+                        <input type="text" id="detailAddress" name="detailAddress" placeholder="Số 123, tòa nhà A, đường B.../ấp C... " class="form-control custom-input">
+                        <div class="invalid-feedback"></div>
+                    </div>     
+                    <div id="date" class="d-flex flex-wrap gap-2 gap-lg-5">
+                        <div class="flex-grow-1">
+                            <label for="lastLogin">Đăng nhập lần cuối :</label>
+                            <input type="text" id="lastLogin" name="lastLogin" placeholder="Nguyen..." class="form-control custom-input" disabled>
+                        </div>
+                        <div class="flex-grow-1">
+                            <!-- flex-md-grow-0 -->
+                            <div>
+                                <label for="dateJoined">Ngày tạo tài khoản:</label>
+                                <input type="text" id="dateJoined" name="dateJoined" placeholder="An..." class="form-control custom-input" disabled>
+                            </div>
+                        </div>
+                    </div> 
+                </form>
+                <div class="card-header">Đổi mật khẩu</div>
+                <form id="changePasswordForm" class="card-body needs-validation d-flex flex-column gap-3" novalidate>
+                    <div>
+                        <label for="oldPassword">Mật khẩu hiện tại:</label>
+                        <input type="password" id="oldPassword" name="oldPassword" placeholder="asI!@njhaGU12..." class="form-control custom-input" required>
+                        <div class="invalid-feedback">
+                            Vui lòng nhập mật khẩu hiện tại
+                        </div>
+                    </div>
+                    <div id="passwordContainer" class="d-flex flex-wrap gap-2 gap-lg-5">
+                        <div class="flex-grow-1">
+                            <label for="password">Mật khẩu:</label>
+                            <input type="password" id="password" name="password" placeholder="asI!@njhaGU12..." class="form-control custom-input" required>
+                            <div class="invalid-feedback">
+                                Vui lòng nhập mật khẩu
+                            </div>
+                        </div>
+                        <div class="flex-grow-1">
+                            <label for="confirmPassword">Xác nhận mật khẩu:</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" placeholder="asI!@njhaGU12..." class="form-control custom-input" required>
+                            <div class="invalid-feedback">
+                                Vui lòng xác nhận mật khẩu
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-primary" data-action="">
+                            <div class="d-flex justify-content-center align-items-center gap-1">
+                                <span id="loading-indicator-btn" class="loading-indicator-btn" style="padding: 0 10px;">
+                                    <span class="spinner-btn"></span>
+                                </span>
+                                <span>Đổi mật khẩu</span>
+                            </div>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </article>
+    </main>
+
+    <section class="modal fade" id="warning-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">Cảnh báo</h5>
+                </div>
+                <div class="modal-body">
+                    <p id="warning-message">
+                        Nếu tiếp tục, các chỉnh sửa sẽ không được lưu. Bạn có muốn ở lại trang không?
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="keep-page-btn" class="btn btn-content" data-bs-dismiss="modal">Ở lại</button>
+                    <button type="button" id="confirm-exit-btn" class="btn btn-danger">Rời đi</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="../../js/index.js"></script>
+    <script src="../../js/admins/admin_index.js"></script>
+    <script src="../../js/admins/accounts/personal_info.js"></script>
+    <script src="../../js/external_address_api.js"></script>
+    <script src="../../js/logout.js"></script>
+
+</body>
+</html>
