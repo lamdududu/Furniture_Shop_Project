@@ -1,130 +1,70 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <title>MiaoMiao</title>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Nội Thất</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-    <link rel="stylesheet" type="text/css" href="../../css/index.css">
-    <link rel="stylesheet" type="text/css" href="../../css/admins/admin_index.css">
-    <!-- <link rel="stylesheet" type="text/css" href="../../css/admins/product_detail.css"> -->
-    <!-- <link rel="stylesheet" type="text/css" href="../../css/login.css"> -->
-</head> 
+    <link rel="stylesheet" href="../../css/index.css">
+    <link rel="stylesheet" href="../../css/admins/admin_index.css">
+</head>
 <body>
+    <div id="sidebarNav">
 
-    <nav id="sidebarNav">
-        
-    </nav>
+    </div>
+    
     <main class="content">
-        <div>
-            <nav aria-label="breadcrumb">
+        <section class="d-flex justify-content-between align-items-center gap-2 p-3 flex-column flex-lg-row">
+            <nav class="col-12 col-lg" aria-label="breadcrumb">
                 <ol class="breadcrumb" id="breadcrumb">
                     <li class="breadcrumb-item"><a href="#"><i class="bi bi-house"></i> Trang chủ</a></li>
-                    <li class="breadcrumb-item"><a href="#">Khuyến mãi</a></li>
-                    <li class="breadcrumb-item"><a href="./promotion_list.html">Danh sách khuyến mãi</a></li>
-                    <li class="breadcrumb-item active">Chi tiết khuyến mãi</li>
+                    <li class="breadcrumb-item"><a href="#">Tài khoản</a></li>
+                    <li id="activeBreadcrumb" class="breadcrumb-item active"></li>
                 </ol>
             </nav>
-        </div>
-        <article class="main-content">
-            <div class="container-fluid">
-                <div class="card">
-                    <div class="card-header">Chi tiết khuyến mãi</div>
-                    <div class="card-body">
-                        <form id="promotionForm" class="row g-3 needs-validation" novalidate>
-                            <div>
-                                <label for="promotionName">Tên khuyến mãi:</label>
-                                <input class="form-control custom-input" type="text" id="promotionName" name="promotionName" placeholder="Tên khuyến mãi...">
-                                <div class="invalid-feedback">
-                                    Vui lòng nhập số lô
-                                </div>
-                            </div>
-                            <div class="d-flex gap-5">
-                                <div class="flex-grow-1">
-                                    <label for="startDateSale"></label>Ngày bắt đầu:</label>
-                                    <input id="startDateSale" class="form-control custom-input" type="datetime-local" name="startDateSale" required>    
-                                    <div class="invalid-feedback">
-                                        Vui lòng nhập ngày bắt đầu khuyến mãi
-                                    </div>
-                                </div>
-                                <div class="flex-grow-1">
-                                    <label for="endDateSale"></label>Ngày kết thúc:</label>
-                                    <input id="endDateSale" class="form-control custom-input" type="datetime-local" name="endDateSale" required>    
-                                    <div class="invalid-feedback">
-                                        Vui lòng nhập ngày kết thúc khuyến mãi
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <label for="saleProductSelector">Sản phẩm:</label>
-                                <select id="saleProductSelector" name="saleProductSelector" class="form-select"     multiple required>
-                                    <!-- <option selected disabled>Chọn sản phẩm</option> -->
-                                    <!-- Danh mục sản phẩm -->
-                                </select>                                
-                                <div class="invalid-feedback">
-                                    Vui lòng nhập chọn sản phẩm khuyến mãi
-                                </div>
-                            </div>
-
-                            <section class="table-container">
-                                <table class="table table-bordered table-striped table-responsive">
-                                    <thead>
-                                        <tr id="tableHeader">
-                                            <th scope="col" class="text-center">ID</th>
-                                            <th scope="col" class="text-center">Tên sản phẩm</th>
-                                            <th scope="col" class="text-center">Tỉ lệ khuyến mãi</th>
-                                            <th colspan="2" scope="col" class="text-center">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="saleProductList">
-                                        
-                                    </tbody>
-                                </table>
-                                <nav class="pagination-container">
-                                    <ul class="pagination" id="pagination">
-                                        <!-- danh sách trang -->
-                                    </ul>
-                                </nav>
-                            </section>
-
-                            <div>
-                                <button id="promotionFormSubmitBtn" type="submit" class="btn btn-primary sticky-btn" data-action=""></button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            <div class="col-12 col-lg-3">
+                <input id="batchSearching" class="form-control search-input" type="search" placeholder="Tìm kiếm..." aria-label="Search">             
             </div>
-        </article>
+        </section>
+
+        <section class="table-container">
+            <table class="table table-bordered table-striped table-responsive">
+                <thead>
+                    <tr id="tableHeader">
+                        <th scope="col" class="text-center">ID</th>
+                        <th scope="col" class="text-center">Tên tài khoản</th>
+                        <th scope="col" class="text-center">Email</th>
+                        <th scope="col" class="text-center">Số điện thoại</th>
+                        <th scope="col" class="text-center">Trạng thái</th>
+                        <th scope="col" class="text-center">Đăng nhập lần cuối</th>
+                        <th scope="col" class="text-center">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="accountContainer">
+                    
+                </tbody>
+            </table>
+            <nav class="pagination-container">
+                <ul class="pagination" id="pagination">
+                    <!-- danh sách trang -->
+                </ul>
+            </nav>
+        </section>
     </main>
-
-    <section class="modal fade" id="warning-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="warningModalLabel">Cảnh báo</h5>
-                </div>
-                <div class="modal-body">
-                    <p id="warning-message">
-                        Nếu tiếp tục, các chỉnh sửa sẽ không được lưu. Bạn có muốn ở lại trang không?
-                    </p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="keep-page-btn" class="btn btn-content" data-bs-dismiss="modal">Ở lại</button>
-                    <button type="button" id="confirm-exit-btn" class="btn btn-danger">Rời đi</button>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <div>
+        <button onclick="navigateToAccountDetail()" class="btn btn-primary sticky-btn">
+            <i class="bi bi-plus"></i>
+            <span>
+                Tạo tài khoản nội bộ
+            </span>
+        </button>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script src="../../js/index.js"></script>
     <script src="../../js/admins/admin_index.js"></script>
-    <script src="../../js/admins/discounts/promotion_detail.js"></script>
+    <script src="../../js/admins/accounts/account_list.js"></script>
     <script src="../../js/logout.js"></script>
-
 </body>
 </html>

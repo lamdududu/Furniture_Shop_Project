@@ -30,6 +30,7 @@ class Address(models.Model):
     district = models.CharField(max_length=100, blank=False, null=False)
     ward = models.CharField(max_length=100, blank=False, null=False)
     detail_address = models.CharField(max_length=500, blank=True, null=True)
+    is_primary = models.BooleanField(default=False, blank=True, null=True)
 
     def __str__(self):
         return self.name

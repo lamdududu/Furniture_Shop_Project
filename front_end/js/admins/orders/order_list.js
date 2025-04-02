@@ -15,12 +15,12 @@ async function paginationClick(pageNumber) {
     let paginatedData
 
     if (!searchValue) {
-        paginatedData = await fetchPaginatedDataWithToken('http://127.0.0.1:8000/api/orders/orders/?', 1, access_token)
+        paginatedData = await fetchPaginatedDataWithToken('http://127.0.0.1:8000/api/orders/orders/?', pageNumber, access_token)
     }
 
     else {
         paginatedData = await fetchPaginatedDataWithToken(
-            `http://127.0.0.1:8000/api/orders/orders/?query=${searchValue}`, pageNumber, access_token
+            `http://127.0.0.1:8000/api/orders/orders/?query=${searchValue}&&`, pageNumber, access_token
         )
     }
 
@@ -54,7 +54,7 @@ function renderOrderList(data) {
             <td class="text-center align-middle">${formatISODate(new Date(order.order_date))}</td>
             <td class="text-center align-middle">${formatPrice(parseFloat(order.total_amount))}</td>
             <td class="text-center align-middle">${order.payment_method.name}</td>
-            <td class="text-center align-middle">${order.is_paid ? 'Đã thanh toán' : 'Chưa thanh toán'}</td>
+            <td class="text-center align-middle">${(now_status.status.id == '6' ? 'Đã hủy' : (order.is_paid ? 'Đã thanh toán' : 'Chưa thanh toán'))}</td>
             <td class="text-center align-middle">${now_status.status.name}</td>
         `;
 

@@ -2,16 +2,19 @@ from django.shortcuts import render
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group
 from django.db import transaction
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
-from .models import User, Address
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import viewsets, status, serializers
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import UserSerializer, AddressSerializer, CustomTokenObtainPairSerializer
+from .models import User, Address
+from .serializers import UserSerializer, AddressSerializer, CustomTokenObtainPairSerializer, ChangePasswordSerializer
 from .permissions import IsManager, StandardUserPermission, ManagerPermission
+from furniture.paginations import CustomPagination
 
 
 # Cấp token (JWT)
@@ -37,6 +40,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     'access': tokens['access'],
                     'refresh': tokens['refresh'],
                     'user': {
+                        'id': user.id,
                         'username': user.username,
                         'email': user.email,
                         'is_staff': user.is_staff,
@@ -54,6 +58,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                     'refresh': tokens['refresh'],
                     'redirect_url': redirect_url,
                     'user': {
+                        'id': user.id,
                         'username': user.username,
                         'email': user.email,
                         'is_staff': user.is_staff,
@@ -69,9 +74,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    queryset = User.objects.all().prefetch_related(
+                    Prefetch(
+                        'address_set', 
+                        queryset=Address.objects.filter(is_primary=True),
+                        to_attr='primary_address'    
+                    )
+                ).order_by('-last_login', '-id')
     serializer_class = UserSerializer
     permission_classes = [StandardUserPermission]
+    pagination_class = CustomPagination
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['is_staff'] 
 
     # chặn post và delete user
     # ngăn không cho tạo user mới bằng viewset này
@@ -81,7 +96,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         if IsManager().has_permission(self.request, self):
-            return User.objects.all()
+            return super().get_queryset()
 
         return User.objects.filter(id=user.id)
     
@@ -92,7 +107,47 @@ class UserViewSet(viewsets.ModelViewSet):
             return super().get_object()
         
         return user
+    
 
+    def update(self, request, *args, **kwargs):
+
+        user_instance = request.user
+        user_data = request.data.get('user')
+ 
+        address_data = request.data.get('address')
+        address_instance = Address.objects.filter(
+            user=user_instance.id,
+            is_primary=True
+        ).first()   
+
+        if not user_instance.is_authenticated:
+            return Response({'detail': 'Bạn không có quyền thay đổi thông tin cá nhân của người dùng này'}, status=status.HTTP_403_FORBIDDEN)
+        
+        try:
+            with transaction.atomic():
+                
+                user_serializer = UserSerializer(user_instance, data=user_data, partial=True)
+                
+                if not user_serializer.is_valid():
+                    print('User serializer is not valid: ', user_serializer.errors)
+                    raise serializers.ValidationError(user_serializer.errors)   
+
+                user_serializer.save()
+
+                address_serializer = AddressSerializer(address_instance, data=address_data, partial=True)
+                
+                if not address_serializer.is_valid():
+                    print('Address serializer is not valid: ', address_serializer.errors)
+                    raise serializers.ValidationError(address_serializer.errors)
+                
+                address_serializer.save()
+
+            return Response({'success': True}, status=status.HTTP_200_OK)
+        
+        except Exception as e:
+            print("Error occurred while updating user: ", e)
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
 
 class AddressViewSet(viewsets.ModelViewSet):
     queryset = Address.objects.all()
@@ -175,6 +230,17 @@ class CheckedUserDataAPIView(APIView):
                     return Response({'exists': False}, status=status.HTTP_200_OK)
 
 
+        # Kiểm tra nhập đúng password     
+        if request.data.get('password') is not None and request.user.is_authenticated:
+            user = User.objects.get(id=request.user.id)
+
+            if user.check_password(request.data.get('password')):
+                return Response({'exists': True}, status=status.HTTP_200_OK)
+            
+            else:
+                return Response({'exists': False}, status=status.HTTP_200_OK)
+
+
         # Kiểm tra số điện thoại tồn tại
         if User.objects.filter(phone_number=request.data.get('phone_number')).exists():
             return Response({'exists': True}, status=status.HTTP_200_OK)
@@ -248,6 +314,7 @@ def createUser(request):
                     raise serializers.ValidationError({'error:': 'Group does not exist'}, status=status.HTTP_400_BAD_REQUEST)
 
             address_data['user'] = user.id
+            address_data['is_primary'] = True
 
             address_serializer = AddressSerializer(data=address_data)
             if not address_serializer.is_valid():
@@ -288,12 +355,18 @@ class CreationStaffAccountView(APIView):
 
     def post(self, request):
         try:
-            createUser(request)
-            return Response(status=status.HTTP_200_OK)
+
+            # Gọi lại hàm hỗ trợ createUser
+            user = createUser(request)         
+            
+            return Response({
+                'id': user.id,
+                'username': user.username,
+            },status=status.HTTP_200_OK)
+        
         except Exception as e:
             print("Error occurred while registering user: ", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class UpdatingStaffAccountView(APIView):
     permission_classes = [ManagerPermission]
@@ -303,6 +376,8 @@ class UpdatingStaffAccountView(APIView):
             user = User.objects.get(id=pk)
             user_data = request.data.get('user')
             is_group = user_data.pop('is_group', None)
+
+            print('User data:', user_data)
 
             user_serializer = UserSerializer(user, data=user_data, partial=True, context={'request': request})
             if not user_serializer.is_valid():
@@ -325,3 +400,37 @@ class UpdatingStaffAccountView(APIView):
         except Exception as e:
             print("Error occurred while updating user: ", e)
             return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+
+class ChangePasswordView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        user = request.user
+
+        if not user.is_authenticated:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ChangePasswordSerializer(data=request.data)
+
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        old_password = serializer.validated_data.get('old_password')
+        new_password = serializer.validated_data.get('new_password')
+
+        if not user.check_password(old_password):
+            return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+
+            user.set_password(new_password)
+            user.save()
+
+            return Response({'message': 'Password has been changed successfully'}, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            print("Error occurred while changing password: ", e)
+            return Response({'error': 'Error occurred while changing password'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

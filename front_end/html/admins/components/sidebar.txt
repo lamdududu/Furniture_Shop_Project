@@ -5,7 +5,7 @@
     <hr>
     <ul class="nav flex-column">
         <li class="nav-item">
-            <a href="#dashboard">Dashboard</a>
+            <a href="./dashboard.html">Dashboard</a>
         </li>
         <li class="nav-item">
             <a href="#" data-bs-toggle="collapse" data-bs-target="#productsMenu">Sản phẩm</a>
@@ -33,14 +33,20 @@
             </div>
         </li>
         <li class="nav-item">
-            <a href="#" data-bs-toggle="collapse" data-bs-target="#usersMenu">Tài khoản</a>
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#usersMenu">Người dùng</a>
             <div class="collapse" id="usersMenu">
-                <a href="#">Khách hàng</a>
-                <a href="#">Nhân viên</a>
+                <a id="customerAccounts" href="#">Khách hàng</a>
+                <a id="staffAccounts" href="#">Nhân viên</a>
+                <a href="#" onclick="navigateToAccountDetail()">Tạo tài khoản nội bộ</a>
             </div>
         </li>
         <li class="nav-item">
-            <a href="#" onclick="logout()">Đăng xuất</a>
+            <a href="#" data-bs-toggle="collapse" data-bs-target="#accountMenu">Tài khoản</a>
+            <div class="collapse" id="accountMenu">
+                <a href="./personal_info.html">Thông tin tài khoản</a>
+                <a href="./personal_info.html">Đổi mật khẩu</a>
+                <a href="#" onclick="logout()">Đăng xuất</a>
+            </div>
         </li>
     </ul>
 </div>

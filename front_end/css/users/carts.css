@@ -57,6 +57,7 @@ table {
     height: 50px;
     object-fit: cover;
 }
+
 /* @media (max-width: 991px) {
     .checkout-sidebar {
         display: none;

@@ -675,16 +675,6 @@ class ProductInfoReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
             # if request.query_params.get('category__name') is not None or request.query_params.get('name') is not None:  
             filtered_products = self.filter_queryset(self.get_queryset())
 
-            print("Query Params:", request.query_params)
-            print("Manual Filter Count:", Product.objects.filter(name__icontains="bàn").count())
-            print("Manual Filter Count:", Product.objects.filter(category__name__icontains="bàn").count())
-            print("Filtered Query:", str(filtered_products.query))  # Debug SQL query
-
-            # Kiểm tra số lượng sản phẩm sau khi lọc
-            print("Filtered product count:", filtered_products.count())
-
-
-
             products = filtered_products.filter(
                 status=True
             ).annotate(
@@ -916,3 +906,4 @@ class SearchingViewSet(APIView):
             return paginator.get_paginated_response(paginated_batches)
             
         return Response({"message": "Nothing found"}, status=status.HTTP_404_NOT_FOUND)
+    

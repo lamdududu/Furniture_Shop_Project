@@ -1,7 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import OrderViewSet, DeliveryFeeViewSet, PaymentMethodViewSet, StatusViewSet, OrderStatusUpdatingViewSet, OrderSearchingViewSet
-
+from .views import OrderViewSet, DeliveryFeeViewSet, PaymentMethodViewSet, StatusViewSet, OrderStatusUpdatingViewSet, OrderSearchingViewSet, RevenueView, ListProductView
 router = DefaultRouter()
 
 router.register(r'orders', OrderViewSet, basename='orders')
@@ -19,5 +18,10 @@ urlpatterns = [
     # Tìm kiếm đơn hàng
     path('searching/', OrderSearchingViewSet.as_view(), name='order_searching'),
 
+    # Doanh thu
+    path('revenue/', RevenueView.as_view(), name='revenue'),
+
+
+    path('list_products/', ListProductView.as_view(), name="list_product")
 
 ] + router.urls

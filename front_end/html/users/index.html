@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
     <link rel="stylesheet" type="text/css" href="../../css/index.css">
     <link rel="stylesheet" type="text/css" href="../../css/users/user_index.css">
+    <link rel="stylesheet" type="text/css" href="../../css/users/product_detail.css">
 </head>
 <body>
     <header id="header" class="header">
@@ -23,10 +24,52 @@
                 <a href="#" class="btn">Xem Sản Phẩm</a>
             </div>
         </section>
-        <section class="section-content">
-            <h2>Sản Phẩm Nổi Bật</h2>
+        <article class="section-content mt-5">
+            <h2>Sản Phẩm Bán Chạy</h2>
             <p>Chúng tôi cung cấp những sản phẩm nội thất tốt nhất cho không gian của bạn.</p>
+            <div class="d-flex overflow-auto related-product-container gap-3" id="bestSeller">
+
+            </div>
+        </article>  
+        <article class="section-content mt-5">
+            <h2>Sản Phẩm Mới</h2>
+            <p>Chúng tôi luôn không ngừng tìm kiếm những sản phẩm mới nhất dành riêng cho bạn.</p>
+            <div class="d-flex overflow-auto related-product-container gap-3" id="newProducts">
+
+            </div>
+        </article>  
+        <section class="about-us mt-5 py-5 bg-light">
+            <div class="container text-center">
+                <h2 class="fw-bold">Về Nội Thất Luminous</h2>
+                <p class="lead">Mang đến những sản phẩm nội thất sang trọng, hiện đại và tinh tế cho không gian sống và làm việc của bạn.</p>
+            </div>
+            
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <i class="bi bi-gem fs-1" style="color: var(--primary-color);"></i>
+                        <h4 class="mt-3">Chất Lượng Cao Cấp</h4>
+                        <p>Chúng tôi cam kết cung cấp sản phẩm với chất liệu cao cấp, độ bền cao và thiết kế tinh xảo.</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="bi bi-people fs-1" style="color: var(--primary-color);"></i>
+                        <h4 class="mt-3">Dịch Vụ Khách Hàng Tận Tâm</h4>
+                        <p>Đội ngũ hỗ trợ chuyên nghiệp sẵn sàng phục vụ bạn 24/7 để mang lại trải nghiệm mua sắm tốt nhất.</p>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <i class="bi bi-truck fs-1" style="color: var(--primary-color);"></i>
+                        <h4 class="mt-3">Giao Hàng Nhanh Chóng</h4>
+                        <p>Chính sách giao hàng linh hoạt, đảm bảo đúng hẹn và an toàn đến tay khách hàng.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="#" class="btn btn-primary px-4 py-2">Tìm Hiểu Thêm</a>
+            </div>
         </section>
+        
+        
     </main>
 
     
@@ -39,6 +82,7 @@
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script src="../../js/index.js"></script>
     <script src="../../js/users/user_index.js"></script>
+    <script src="../../js/users/homepage.js"></script>
     <script src="../../js/login.js" defer></script>
     <script src="../../js/logout.js" defer></script>
     <script src="../../js/register.js" defer></script>

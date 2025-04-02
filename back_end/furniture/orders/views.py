@@ -1,7 +1,9 @@
 import json
 import os
 import requests
-from datetime import datetime
+from collections import defaultdict, OrderedDict
+from datetime import datetime, timedelta
+from django.utils.timezone import now
 from decouple import config
 from django.utils.timezone import make_aware
 from django.core.exceptions import ObjectDoesNotExist
@@ -10,7 +12,8 @@ from django.shortcuts import get_object_or_404
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models.expressions import Func, Value
 from django.db import transaction
-from django.db.models import Q, OuterRef, JSONField, F, Subquery
+from django.db.models import Q, OuterRef, JSONField, F, Subquery, Sum
+from django.db.models.functions import ExtractWeek, ExtractYear, ExtractDay, ExtractMonth
 from rest_framework.decorators import APIView
 from rest_framework.response import Response
 from rest_framework import viewsets, status, serializers
@@ -22,7 +25,7 @@ from .permissions import OrderPermissions
 from carts.models import CartItem
 from discounts.models import UserCouponHistory, Coupon, Discount
 from discounts.serializers import UserCouponHistorySerializer
-from products.models import Price, Variant, ItemDimension
+from products.models import Price, Variant, ItemDimension, Image, Product
 from products.serializers import BatchVariantSerializer
 from users.models import Address
 from furniture.permissions import IsManager, IsAdmin, StandardActionPermission
@@ -38,6 +41,7 @@ class PaymentMethodViewSet(viewsets.ModelViewSet):
     pagination_class = None
 
 
+# Tính phí vận chuyển
 def get_delivery_fee(province, district, ward, value_of_order, order_items):
 
     token = config('GHN_TOKEN')
@@ -241,6 +245,8 @@ def get_delivery_fee(province, district, ward, value_of_order, order_items):
             'error': f'Error occurred while fetching delivery fee: {response.status_code}'
         }
 
+
+# Lấy mã địa chỉ
 def get_address_for_delivery_fee(api, token, param_name=None, id=None):
 
     headers = {
@@ -261,7 +267,9 @@ def get_address_for_delivery_fee(api, token, param_name=None, id=None):
     except requests.exceptions.RequestException as e:
         print(f'Error occurred while fetching address: {e}')
         return False
-    
+
+
+# Lấy dịch vụ giao hàng   
 def get_service_type(token, shop_id, from_district_id, to_district_id):
 
     service_type_url = 'https://online-gateway.ghn.vn/shiip/public-api/v2/shipping-order/available-services'
@@ -288,6 +296,7 @@ def get_service_type(token, shop_id, from_district_id, to_district_id):
         print(f'Error occurred while fetching service type: {e}')
         return False
 
+
 class DeliveryFeeViewSet(APIView):
 
     permission_classes = [IsAuthenticated]
@@ -295,6 +304,8 @@ class DeliveryFeeViewSet(APIView):
     def post(self, request, *args, **kwargs):
         address = Address.objects.filter(id=request.data.get('address')).first()
         
+        print('address', address.province, address.district, address.ward)
+
         if not address:
             print('Address not found')
             return Response({'error': 'Address not found'}, status=status.HTTP_404_NOT_FOUND)
@@ -310,7 +321,7 @@ class DeliveryFeeViewSet(APIView):
 
 
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.select_related('user', 'address', 'payment_method').prefetch_related('coupons')
+    queryset = Order.objects.select_related('user', 'address', 'payment_method').prefetch_related('coupons').order_by('-id')
     serializer_class = OrderSerializer
     permission_classes = [OrderPermissions]
     pagination_class = CustomPagination
@@ -330,6 +341,12 @@ class OrderViewSet(viewsets.ModelViewSet):
         return get_object_or_404(Order, id=self.kwargs["pk"], user=self.request.user)
 
     
+    # def retrieve(self, request, pk=None):
+
+    #     order = self.get_object()
+        
+        
+
     def create(self, request, *args, **kwargs):
 
         # lấy thông tin đơn đặt hàng
@@ -379,7 +396,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         order_data['total_amount'] = total_amount
         order_data['delivery_fee'] = delivery_fee.get('data').get('total')
         order_data['user_id'] = request.user.id
-        order_data['order_date'] = datetime.now()
+        order_data['order_date'] = make_aware(datetime.now())
         order_data['order_items'] = list(order_items)
 
         if order_data['payment_method_id'] == 1:
@@ -387,13 +404,11 @@ class OrderViewSet(viewsets.ModelViewSet):
         else:
             order_data['is_paid'] = True
 
-
-        now = datetime.now()
         # Đặt trạng thái ban đầu cho đơn hàng
         order_data['order_status'] = [
             {
                 'status_id': 1,
-                'updated_at': now
+                'updated_at': make_aware(datetime.now())
             }
         ]
 
@@ -448,6 +463,19 @@ class OrderViewSet(viewsets.ModelViewSet):
                             raise serializers.ValidationError({'error': 'Coupon history serializer not valid'})
 
                         coupon_history_serializer.save()
+
+                        for coupon in used_coupons:
+                            coupon = Coupon.objects.get(id=coupon['coupon'])
+
+                            if coupon.usage_limits is not None:
+                                if coupon.usage_count is None:
+                                    coupon.usage_count = 1
+
+                                else:
+                                    coupon.usage_count += 1
+
+                                coupon.save()
+                    
 
                 except Exception as e:
                     print('Error occurred while saving coupon history: ', e)
@@ -592,6 +620,10 @@ def calculate_final_amount(total_amount, delivery_fee, coupons, user):
             if check_used_coupon_history(coupon, user):
                 print("Coupon has been used", coupon)
                 return False
+            
+            if cp.usage_limits is not None and cp.usage_count == cp.usage_limits:
+                print("Coupon has reached its usage limit", coupon)
+                return False
 
             if cp.start_date <= today and (not cp.end_date or cp.end_date >= today) and (cp.min_amount is None or cp.min_amount <= total_amount):
                 discount = total_amount * float(cp.percentage)
@@ -654,7 +686,13 @@ class OrderStatusUpdatingViewSet(APIView):
                 print('Missing order_id or status_id')
                 return Response({'error': 'Missing order_id or status_id'}, status=status.HTTP_400_BAD_REQUEST)
             
-            order_status = OrderStatus.objects.create(order=order, status=new_status, updated_at=datetime.now())
+            order_status = OrderStatus.objects.create(order=order, status=new_status, updated_at=make_aware(datetime.now()))
+
+            print(order_status)
+
+            if order_status.status.id == 5:
+                order.is_paid = True
+                order.save()
             
             return Response({
                 'updated_at': order_status.updated_at
@@ -684,8 +722,8 @@ class OrderSearchingViewSet(APIView):
             orders = Order.objects.filter(
                 user=self.request.user,
             ).filter(
-                Q(status__name=order_info) |
-                Q(payment_method__name=order_info)
+                Q(status__name__icontains=order_info) |
+                Q(payment_method__name__icontains=order_info)
             ).distinct()
 
             serializers = OrderSerializer(data=orders, many=True)
@@ -698,7 +736,8 @@ class OrderSearchingViewSet(APIView):
 
             orders = Order.objects.filter(
                 Q(status__name=order_info) |
-                Q(payment_method__name=order_info)
+                Q(payment_method__name=order_info) |
+                Q(user__username__icontains=order_info)
             ).distinct()
 
             serializers = OrderSerializer(data=orders, many=True)
@@ -709,3 +748,195 @@ class OrderSearchingViewSet(APIView):
     
 
 
+class RevenueView(APIView):
+
+    permission_classes = [IsAdmin]
+
+    def get(self, request):
+        
+        param = request.GET.get('query')
+
+        if not param:
+            print('Missing query parameter')
+            return Response({'error': 'Missing query parameter'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        today = make_aware(datetime.now())
+
+        order_list = None
+
+        if param == 'week':
+            week = today - timedelta(days=7)
+
+            order_list = Order.objects.filter(
+                order_date__gte=week
+            ).annotate(
+                group=ExtractDay('order_date')
+            ).order_by('group')
+
+        
+        if param == 'month':
+            if not request.GET.get('year'):
+                order_list = Order.objects.filter(
+                    order_date__year=today.year,
+                ).annotate(
+                    group=ExtractMonth('order_date')
+                ).order_by('group')
+
+            else:
+                year = int(request.GET.get('year')) if request.GET.get('year') else today.year
+                order_list = Order.objects.filter(
+                    order_date__year=today.year,
+                ).annotate(
+                    group=ExtractMonth('order_date')
+                ).order_by('group')
+
+        if param == 'year':
+
+            order_list = Order.objects.all().annotate(
+                group=ExtractYear('order_date')
+            ).order_by('group')
+
+        if param == 'date':
+            if not request.GET.get('month'):
+                order_list = Order.objects.filter(
+                    order_date__year=today.year,
+                    order_date__month=today.month,
+                ).annotate(
+                    group=ExtractDay('order_date')
+                ).order_by('group')
+
+            else:
+                month = int(request.GET.get('month')) if request.GET.get('month') else today.month
+                order_list = Order.objects.filter(
+                    order_date__year=today.year,
+                    order_date__month=month,
+                ).annotate(
+                    group=ExtractDay('order_date')
+                ).order_by('group')
+
+
+        # Nhóm các đơn hàng theo tuần
+        group_orders = defaultdict(list)
+        for order in order_list:
+            group_orders[order.group].append(order)
+
+        print("weeky: ", group_orders)
+
+        # Tính tổng tiền cho từng tuần 
+        group_revenue = {}
+        for group, orders in group_orders.items():
+            total_amount = self.calculate_revenue(orders)  # Truyền danh sách đơn hàng
+            group_revenue[group] = total_amount
+
+        return Response(group_revenue, status=status.HTTP_200_OK)
+
+    def calculate_revenue(self, orders):
+        total_amount = 0
+        for order in orders:
+            total_amount = total_amount + order.total_amount - order.delivery_fee
+        return total_amount
+    
+
+
+
+class ListProductView(APIView):
+   
+    def get(self, request):
+        
+        query = request.GET.get('query')
+
+        if not query:
+            return Response('No query', status=status.HTTP_400_BAD_REQUEST)
+
+
+        today = make_aware(datetime.now())
+
+        # Subquery lấy giá thấp nhất của sản phẩm
+        min_price_subquery = Price.objects.filter(
+            variant__product=OuterRef('id'),
+            start_date__lte=today
+        ).filter(
+            Q(end_date__gt=today) | Q(end_date__isnull=True)
+        ).order_by('price').values('price')[:1]  # Lấy giá thấp nhất
+
+        # Subquery lấy giảm giá cao nhất của sản phẩm
+        max_discount_subquery = Discount.objects.filter(
+            product=OuterRef('id'),
+            promotion__start_date__lte=today,
+            promotion__end_date__gte=today
+        ).order_by('-percentage').values('percentage')[:1]  # Lấy giảm giá cao nhất
+
+        # Subquery lấy ảnh đầu tiên của sản phẩm
+        first_image_subquery = Image.objects.filter(
+            product=OuterRef('id')
+        ).order_by('id').values('image_file')[:1]  # Lấy ảnh đầu tiên
+
+        if query == 'best_seller':
+
+            # Truy vấn lấy danh sách sản phẩm bán chạy
+            bestseller_product_ids = OrderItem.objects.values(
+                "variant__product"       # Nhóm theo sản phẩm
+                ) .annotate(
+                    total_sold=Sum("quantity")      # Tính tổng số lượng đã bán
+                ).order_by("-total_sold")[:8].values_list('variant__product', flat=True)  # Sắp xếp giảm dần
+            
+
+            # Truy vấn lấy thông tin sản phẩm bán chạy + giá + giảm giá + ảnh
+            bestseller_products = Product.objects.filter(
+                id__in=bestseller_product_ids, status=True
+            ).annotate(
+                min_price=Subquery(min_price_subquery),
+                discount_percentage=Subquery(max_discount_subquery),
+                first_image=Subquery(first_image_subquery)
+            ).order_by('-id')  # Giữ thứ tự theo ID sản phẩm
+
+            bestseller_list = []
+            for product in bestseller_products:
+                min_price = product.min_price
+                discount = product.discount_percentage
+                sale_price = min_price * (1-discount) if min_price and discount else None
+
+                image_url = request.build_absolute_uri(settings.MEDIA_URL + product.first_image) if product.first_image else None
+
+
+                bestseller_list.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'price': min_price or 0,
+                    'sale_price': sale_price,
+                    'discount_percentage': discount,
+                    'image': image_url,
+                })
+
+            return Response(list(bestseller_list), status=status.HTTP_200_OK)
+        
+
+        if query == 'new':
+
+            new_product = Product.objects.filter(
+                status=True
+            ).annotate(
+                min_price=Subquery(min_price_subquery),
+                discount_percentage=Subquery(max_discount_subquery),
+                first_image=Subquery(first_image_subquery)
+            ).order_by('-id')[:8]
+
+            new_list = []
+            for product in new_product:
+                min_price = product.min_price
+                discount = product.discount_percentage
+                sale_price = min_price * (1-discount) if min_price and discount else None
+
+                image_url = request.build_absolute_uri(settings.MEDIA_URL + product.first_image) if product.first_image else None
+
+
+                new_list.append({
+                    'id': product.id,
+                    'name': product.name,
+                    'price': min_price or 0,
+                    'sale_price': sale_price,
+                    'discount_percentage': discount,
+                    'image': image_url,
+                })
+
+            return Response(list(new_list), status=status.HTTP_200_OK)

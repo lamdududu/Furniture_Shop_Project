@@ -63,6 +63,45 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return data
     
 
+class AddressSerializer(serializers.ModelSerializer):
+
+    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True, required=True)
+
+    class Meta:
+        model = Address
+        fields = '__all__'
+
+    # def to_representation(self, instance):
+    #     rep = super().to_representation(instance)
+    #     rep['address'] = instance.get_full_address()
+    #     print(f"Address: {rep['address']}")
+    #     return rep
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(write_only=True, required=True)
+    new_password = serializers.CharField(write_only=True, required=True)
+
+    def validate_new_password(self, value):
+        if len(value) < 8:
+            raise serializers.ValidationError("Password must be at least 8 characters long.")
+        
+        if not any(char.isdigit() for char in value):
+            raise serializers.ValidationError("Password must contain at least one digit.")
+        
+        if not any(char.isalpha() for char in value):
+            raise serializers.ValidationError("Password must contain at least one letter.")
+        
+        if not any(char.isupper() for char in value):
+            raise serializers.ValidationError("Password must contain at least one uppercase letter.")
+        
+        if not any(char.islower() for char in value):
+            raise serializers.ValidationError("Password must contain at least one lowercase letter.")
+        
+        if not any(char in '!@#$%^&*' for char in value):
+            raise serializers.ValidationError("Password must contain at least one special character.")
+        
+        return value
+
 
 class UserSerializer(serializers.ModelSerializer):
 
@@ -72,14 +111,25 @@ class UserSerializer(serializers.ModelSerializer):
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now_add=True)
     
+    address = serializers.SerializerMethodField(read_only=True)
+    group = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = User
-        fields = ['id', 'username', 'password', 'email', 'phone_number', 'first_name', 'last_name',
-                'is_staff', 'is_superuser', 'is_active', 'date_joined', 'last_login',
+        fields = ['id', 'username', 'password', 'email', 'phone_number', 'first_name', 'last_name', 
+                'is_staff', 'is_superuser', 'is_active', 'date_joined', 'last_login', 'address', 'group',
         ]
         extra_kwargs = {
             'password': {'write_only': True, 'required': True},
         }
+
+    def get_address(self, obj):
+        if hasattr(obj, 'primary_address') and obj.primary_address:
+            return AddressSerializer(obj.primary_address[0]).data  # Lấy phần tử đầu tiên
+        return None
+    
+    def get_group(self, obj):
+        return obj.groups.first().name if obj.groups.first() else None
 
     def validate_password(self, value):
         if len(value) < 8:
@@ -121,7 +171,12 @@ class UserSerializer(serializers.ModelSerializer):
         return user
 
     def update(self, instance, validated_data):
-        instance.username = validated_data.get('username', instance.username)
+
+        # Không cho phép thay đổi username và password
+        validated_data.pop('username', None)
+        validated_data.pop('password', None)
+
+        # instance.username = validated_data.get('username', instance.username)
         instance.email = validated_data.get('email', instance.email)
         instance.phone_number = validated_data.get('phone_number', instance.phone_number)
         instance.first_name = validated_data.get('first_name', instance.first_name)
@@ -133,25 +188,11 @@ class UserSerializer(serializers.ModelSerializer):
             instance.is_staff = validated_data.get('is_staff', False)
             instance.is_superuser = validated_data.get('is_superuser', False)
 
-        if 'password' in validated_data:
-            instance.set_password(validated_data['password'])
+        # if 'password' in validated_data:
+        #     instance.set_password(validated_data['password'])
         
         instance.save()
 
         return instance
 
 
-class AddressSerializer(serializers.ModelSerializer):
-
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all(), write_only=True, required=True)
-
-    class Meta:
-        model = Address
-        fields = '__all__'
-
-    # def to_representation(self, instance):
-    #     rep = super().to_representation(instance)
-    #     rep['address'] = instance.get_full_address()
-    #     print(f"Address: {rep['address']}")
-    #     return rep
-    

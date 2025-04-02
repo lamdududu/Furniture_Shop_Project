@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import UserViewSet, AddressViewSet, CheckedUserDataAPIView, CustomTokenObtainPairView
-from .views import LogoutView, RegisterView, CreationStaffAccountView, UpdatingStaffAccountView
+from .views import LogoutView, RegisterView, CreationStaffAccountView, UpdatingStaffAccountView, ChangePasswordView
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='user')     # Dùng basename='user' để tránh xung đột với module 'users'
@@ -27,6 +27,9 @@ urlpatterns = [
 
     # Đăng xuất
     path('logout/', LogoutView.as_view(), name='logout'),
+
+    # Thay đổi mật khẩu
+    path('change_password/', ChangePasswordView.as_view(), name='change_password'),
 
 
 ] + router.urls

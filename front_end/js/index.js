@@ -280,7 +280,28 @@ async function checkCouponCode(code) {
     }
 }
 
+async function checkUserData(user_data, data_type) {
+    try {
+        const response = await fetch('http://127.0.0.1:8000/api/users/check_user_data/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                // key động
+                [data_type]: user_data,
+            })
+        })
+        
+        const data = await response.json();
+        console.log(data)
+        return data.exists
+    }
 
+    catch (error) {
+        console.error('Error:', error);
+    }
+}
 
 // ------------------------------------------------------------
 // Tìm kiếm

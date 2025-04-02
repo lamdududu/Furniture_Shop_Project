@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Nội Thất</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="../../css/index.css">
+    <link rel="stylesheet" href="../../css/admins/admin_index.css">
+</head>
+<body>
+    <div id="sidebarNav">
+
+    </div>
+    
+    <main class="content">
+        <section class="d-flex justify-content-between align-items-center gap-2 p-3 flex-column flex-lg-row">
+            <nav class="col-12 col-lg" aria-label="breadcrumb">
+                <ol class="breadcrumb" id="breadcrumb">
+                    <li class="breadcrumb-item"><a href="#"><i class="bi bi-house"></i> Trang chủ</a></li>
+                    <!-- <li class="breadcrumb-item"><a href="#">Sản phẩm</a></li> -->
+                    <li class="breadcrumb-item active">Doanh thu</li>
+                </ol>
+            </nav>
+        </section>
+        <h3><b>Thống kê doanh thu</b></h3>
+        <section class="grid-container">
+            <div class="chart-item">
+                <canvas id="weekChart"></canvas>
+            </div>
+            <div class="chart-item">
+                <canvas id="dayChart"></canvas>
+            </div>
+            <div class="chart-item">
+                <canvas id="monthChart"></canvas>
+            </div>
+            <div class="chart-item">
+                <canvas id="yearChart"></canvas>
+            </div>
+        </section>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="../../js/index.js"></script>
+    <script src="../../js/admins/admin_index.js"></script>
+    <script src="../../js/admins/charts.js"></script>
+
+</body>
+</html>

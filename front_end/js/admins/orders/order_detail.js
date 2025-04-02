@@ -82,12 +82,15 @@ async function renderOrderDetail() {
 
     orderDetail.order_items.forEach((orderItem, index) => {
         const row = document.createElement('tr')
+
+        const price = parseFloat(orderItem.price.sale_price ? orderItem.price.sale_price : orderItem.price)
+
         row.innerHTML = `
             <td class="text-center align-middle">${index + 1}</td>
             <td class="text-center align-middle">${orderItem.variant.product.name}</td>
             <td class="text-center align-middle">${orderItem.variant.name}</td>
-            <td class="text-center align-middle">${formatPrice(orderItem.price)}</td>
-            <td class="text-center align-middle">${formatPrice(orderItem.quantity * orderItem.price)}</td>
+            <td class="text-center align-middle">${formatPrice(price)}</td>
+            <td class="text-center align-middle">${formatPrice(orderItem.quantity * price)}</td>
             <td class="text-center align-middle">${orderItem.quantity}</td>
         `
         orderItemTable.appendChild(row)
@@ -126,7 +129,10 @@ async function renderOrderDetail() {
 // Cập nhật trạng thái đơn hàng
 // ----------------------------------------------------------------
 
-document.getElementById('updateStatusBtn').addEventListener('click', async () => {
+document.getElementById('updateStatusBtn').addEventListener('click', async (event) => {
+
+    event.preventDefault();
+    event.stopPropagation()
 
     try {
         const response = await fetch(`http://127.0.0.1:8000/api/orders/order_status/`, {
@@ -215,11 +221,12 @@ async function updateStatus() {
 
         alert('Cập nhật trạng thái thành công')
 
+        window.location.reload()
     }
 
     catch (error) {
         console.log(error)
-        alert('Đã xảy ra l��i khi cập nhật trạng thái đơn hàng.')
+        alert('Đã xảy ra lỗi khi cập nhật trạng thái đơn hàng.')
         return
     }
 }

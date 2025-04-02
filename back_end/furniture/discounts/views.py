@@ -3,7 +3,7 @@ from django.utils.timezone import make_aware, now
 from django.utils.dateparse import parse_datetime
 from django.utils.timezone import make_aware
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, F
 from rest_framework.response import Response
 from rest_framework import viewsets, status
 from rest_framework.decorators import APIView
@@ -16,7 +16,7 @@ from .serializers import PromotionSerializer, DiscountSerializer, CouponSerializ
 
 # Create your views here.
 class PromotionViewSet(viewsets.ModelViewSet):
-    queryset = Promotion.objects.all()
+    queryset = Promotion.objects.all().order_by('-id')
     serializer_class = PromotionSerializer
     pagination_class = CustomPagination
     permission_classes = [StandardActionPermission]
@@ -109,7 +109,7 @@ class PromotionViewSet(viewsets.ModelViewSet):
 
 class DiscountViewSet(viewsets.ModelViewSet):
 
-    queryset = Discount.objects.all()
+    queryset = Discount.objects.all().order_by('-id')
     serializer_class = DiscountSerializer   
     pagination_class = CustomPagination
     permission_classes = [StandardActionPermission]     
@@ -168,7 +168,7 @@ class CouponViewSet(viewsets.ModelViewSet):
 
         if user.is_authenticated:
             coupon_subquery = UserCouponHistory.objects.filter(
-                user_id=user.id
+                user_id=user.id,
             ).values_list('coupon_id', flat=True)
                                                                             # `flat=True` để trả về danh sách hay vì dict (tăng hiệu suất)
                                                                             # sử dụng khi lấy 1 cột duy nhất và trong `.values_list()` (không `.values`)
@@ -176,9 +176,11 @@ class CouponViewSet(viewsets.ModelViewSet):
             print('List coupon: ', coupon_subquery)
             return Coupon.objects.filter(
                         start_date__lte=make_aware(datetime.now()),
-                        is_hidden=False
-                    ).filter( 
-                        Q(end_date__gte=make_aware(datetime.now())) | Q(end_date__isnull=True)
+                        is_hidden=False,
+                    ).filter(
+                        (Q(end_date__gte=make_aware(datetime.now())) | Q(end_date__isnull=True))
+                        &
+                        (Q(usage_limits__isnull=True) | ~Q(usage_limits=F('usage_count')))
                     ).exclude(id__in=coupon_subquery)
     
     def paginate_queryset(self, queryset):

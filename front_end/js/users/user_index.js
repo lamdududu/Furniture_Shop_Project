@@ -49,6 +49,7 @@ async function loadHeader() {
                     Tài khoản
                 </a>
                 <ul id="navbarDropdown" class="dropdown-menu" aria-labelledby="navbarDropdownAccount">
+                    <a class="dropdown-item" href="./order_history.html">Lịch sử mua hàng</a>
                     <a class="dropdown-item" href="#">Thông tin tài khoản</a>
                     <a class="dropdown-item" href="#">Đổi mật khẩu</a>
                     <div class="dropdown-divider"></div>

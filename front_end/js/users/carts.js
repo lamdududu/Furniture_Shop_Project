@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 <div class="text-center">
                     <div class="error-code" style="font-size: 4rem;">Giỏ hàng trống</div>
                     <h2 class="mb-3 error-text">Bạn chưa có gì trong giỏ hàng của mình</h2>                    
-                    <a href="./products .html" class="btn btn-primary btn-custom">
+                    <a href="./products.html" class="btn btn-primary btn-custom">
                         <i class="bi bi-arrow-left"></i> Mua sắm nào
                     </a>
                 </div>
@@ -48,9 +48,12 @@ function renderCartItemList(data) {
         const cartItem = document.createElement('tr')
         cartItem.classList.add('cart-item')
         cartItem.setAttribute('data-id', item.id)
+
+        const price = item.sale_price ? item.sale_price : item.price
+
         cartItem.innerHTML = `
             <td class="text-center align-middle">
-                <input type="checkbox" class="item-checkbox" data-price="${item.price}" data-id="${item.id}">
+                <input type="checkbox" class="item-checkbox" data-original-price="${item.sale_price ? item.price : ''}"  data-price="${price}" data-id="${item.id}">
             </td>
             <td>
                 <div class="d-flex align-items-center flex-nowrap gap-3 product-td">
@@ -65,14 +68,17 @@ function renderCartItemList(data) {
                     <option value="${item.variant.id}" selected>${item.variant.name}</option>
                 </select>   
             </td>
-            <td class="text-center align-middle price" data-price="${item.price}">${formatPrice(parseFloat(item.price) * parseInt(item.quantity))}</td>
+            <td class="text-center align-middle price" data-price="${price}" data-original-price="${item.sale_price ? item.price : ''}">
+                <span class="original-price">${item.sale_price ? formatPrice(parseFloat(item.price) * parseInt(item.quantity)) : ''}</span>
+                <span class="ps-1">${formatPrice(parseFloat(price) * parseInt(item.quantity))}</span>
+            </td>
             <td  class="text-center align-middle">
                 <div class="d-flex justify-content-center">
                     <input type="number" class="form-control w-50 item-quantity" value="${parseInt(item.quantity)}" min="1" max="${item.variant.stock}" step="1">
                 </div>
             </td>
             <td class="text-center align-middle">
-                <button class="btn delete-btn">
+                <button class="btn delete-btn btn-warning">
                     <i class="bi bi-trash"></i>
                 </button>
             </td>
@@ -152,10 +158,31 @@ function initSelect2(selector, quantity, cartItemID, productID) {
 
         const cartItem = selector.closest('tr')
 
-        const price = parseFloat(await getPriceOfVariant($(this).val()))
+        const price_data = await getPriceOfVariant($(this).val())
 
-        cartItem.querySelector('.price').innerHTML = formatPrice(price * parseFloat(quantity.value))
-        cartItem.querySelector('.price').setAttribute('data-price', price)
+        const priceElement = cartItem.querySelector('.price')
+
+        const price = price_data.sale_price ? parseFloat(price_data.sale_price) : parseFloat(price_data.price)
+
+        priceElement.innerHTML = `
+            <span class="original-price">${price_data.sale_price ? formatPrice(parseFloat(price_data.price) * parseInt(quantity.value)) : ''}</span>
+            <span class="ps-1">${formatPrice(parseFloat(price) * parseInt(quantity.value))}</span>
+        `
+
+        priceElement.setAttribute('data-price', price)
+
+        if (price_data.sale_price) {
+            priceElement.setAttribute('data-original-price', price_data.price)
+        }
+
+        cartItem.querySelector('input[type=checkbox]').setAttribute('data-price', price)
+
+        if (price_data.sale_price) {
+            cartItem.querySelector('input[type=checkbox]').setAttribute('data-original-price', price_data.price)
+        }
+
+        updateTotalAmount(getSelectedCheckboxList())
+        
     })
 }
 
@@ -197,7 +224,7 @@ async function getPriceOfVariant(variantID) {
         console.log(priceData)
 
         if (priceData)
-            return priceData.price
+            return priceData
     }
 
     catch (error) {
@@ -264,8 +291,15 @@ document.addEventListener('change', (event) => {
         updateCartItem(quantity, cartItemID, null)
 
         // Cập nhật lại hiển thị giá tiền của sản phẩm (giá * số lượng)
+
         const price = parseFloat(cartItem.querySelector('.price').getAttribute('data-price'))
-        cartItem.querySelector('.price').innerHTML = formatPrice(price * quantity)
+        const original_price = parseFloat(cartItem.querySelector('.price').getAttribute('data-original-price'))
+        cartItem.querySelector('.price').innerHTML = `
+            <span class="original-price">${original_price ? formatPrice(original_price * quantity) : ''}</span>
+            <span class="ps-1">${formatPrice(price * quantity)}</span
+        `
+
+        updateTotalAmount(getSelectedCheckboxList())
     }
 
 

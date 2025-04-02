@@ -62,14 +62,6 @@ class CartItemViewSet(viewsets.ModelViewSet):
             product=OuterRef('variant__product__id')
         ).order_by('id').values('image_file')[:1]
 
-        stock_subquery = BatchVariant.objects.filter(
-            variant=OuterRef('variant__id'),
-            stock__gt=0
-        ).annotate(
-            item_stock=Sum('stock')
-        ).values('item_stock')[:1]
-
-
         return CartItem.objects.select_related(
             'variant__product'
         ).filter(
@@ -78,7 +70,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
             price=Subquery(price_subquery),
             discount_percentage=Subquery(discount_subquery),
             image=Subquery(image_subquery),
-            stock=Subquery(stock_subquery)
+            stock=Sum('variant__batchvariant__stock', filter=Q(variant__batchvariant__stock__gt=0))
         ).order_by(
             '-id'
         )
@@ -163,22 +155,41 @@ class CartItemViewSet(viewsets.ModelViewSet):
         
 class UpdatePriceForCartItemViewSet(APIView):
 
-    permission_classes = [IsAuthenticated]
-
     def post(self, request):
         variant = request.data.get('variant')
 
         try:
             today = make_aware(datetime.now())
+            
+            
+            discount_subquery = Discount.objects.filter(
+                product=OuterRef('variant__product__id'),
+                promotion__start_date__lte=today,
+                promotion__end_date__gte=today
+            ).order_by('-percentage').values('percentage')[:1]
+
+
             price = Price.objects.filter(
                 variant=variant,
-                start_date__lte=today,
+                start_date__lte=today
             ).filter(
                 Q(end_date__gt=today) | Q(end_date__isnull=True)
-            ).order_by('price').values('price')[:1]
+            ).annotate(
+                discount = Subquery(discount_subquery)
+            ).values('price', 'discount')[:1]
+
 
             if not price:
                 return Response({'error': 'Price does not exist'}, status=status.HTTP_404_NOT_FOUND)
+            
+            if price[0]['discount']:
+                price[0]['sale_price'] = price[0]['price'] * (1 - price[0]['discount'])
+
+                return Response({
+                    'price': price[0]['price'],
+                    'sale_price': price[0]['sale_price'],
+                    'discount': price[0]['discount'],
+                }, status=status.HTTP_200_OK)
 
             return Response({'price': price[0]['price']}, status=status.HTTP_200_OK)
 
